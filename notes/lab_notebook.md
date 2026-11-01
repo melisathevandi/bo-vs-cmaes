@@ -73,7 +73,7 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - Checked numerically with the learning rates pycma actually uses (`code/h5_expected_alpha.py`):
   the lambda / numerator factor is almost constant in d (log-log slope about -0.005), so it does not change alpha.
   Rate-based expected alpha: 1.71 (d in [2, 80]) and 1.87 (d >= 10) with pycma 4.5.0; 1.69 / 1.86 with the
-  tutorial formulas. pycma's c1 matches the tutorial; its c_mu is 10-50% larger.
+  tutorial formulas. pycma's c1 matches the tutorial; its c_mu is 7-48% larger (48% at d=2, 17% at d=10, 7% at d=80).
 - Consequence: the draft prediction "CI for d >= 10 contains 2" was not what the rates predict at finite d.
   The prediction now compares the fitted alpha with the rate-based value 1.87.
 - Decision: UCB stays in E3 (H3 makes a UCB-vs-LogEI prediction; E3 is at d <= 5 and cheap), so it is no longer
