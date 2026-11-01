@@ -48,9 +48,12 @@ def build_model(train_x, train_y, ard, nu):
 def fit(model, saved):
     """Fit hyperparameters by maximum marginal likelihood.
 
-    If the optimiser fails, fall back to the previously saved hyperparameters.
-    Returns the (kernel, likelihood) state to reuse at the next iterations.
+    Warm start: the optimiser begins at the previously saved hyperparameters, which is
+    much cheaper than starting from the defaults at every refit. If it fails, the saved
+    values are kept. Returns the (kernel, likelihood) state to reuse at the next iterations.
     """
+    if saved is not None:
+        load(model, saved)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
