@@ -8,7 +8,8 @@ log-normal prior that BoTorch uses by default (Hvarfner et al., 2024).
 
 Refit schedule (amendment A4): the GP hyperparameters are refitted at every iteration
 while n <= refit_after, then every refit_every iterations. Between refits the previous
-hyperparameters are reused with the new data.
+hyperparameters are reused with the new data. Each refit starts from BoTorch's defaults
+(cold); warm-started refits are optional (warm_start=True) but changed results, see A4.
 
 Diagnostics (E2): at each n in `checkpoints` the model is refitted and we record the
 lengthscales and the Spearman rank correlation between the GP posterior mean and the
@@ -45,12 +46,14 @@ def build_model(train_x, train_y, ard, nu):
     return SingleTaskGP(train_x, train_y, covar_module=kernel)
 
 
-def fit(model, saved, warm=True):
+def fit(model, saved, warm=False):
     """Fit hyperparameters by maximum marginal likelihood.
 
-    Warm start: the optimiser begins at the previously saved hyperparameters, which is
-    much cheaper than starting from the defaults at every refit. If it fails, the saved
-    values are kept. Returns the (kernel, likelihood) state to reuse at the next iterations.
+    Cold start (default): the optimiser begins at BoTorch's default values. With warm=True
+    it begins at the previously saved hyperparameters, which is about 3x cheaper but gave
+    worse results on the rotated ellipsoid (check A4, results/summary/a4_refit_check.csv),
+    so it is off. If the optimiser fails, the saved values are kept. Returns the (kernel,
+    likelihood) state to reuse at the iterations between refits.
     """
     if saved is not None and warm:
         load(model, saved)
@@ -87,7 +90,7 @@ def rank_correlation(model, problem, x_inc, rng, m=200, radius=0.1):
 
 
 def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
-        beta=4.0, refit_after=100, refit_every=5, warm_start=True, log_y=False,
+        beta=4.0, refit_after=100, refit_every=5, warm_start=False, log_y=False,
         raw_samples=512, num_restarts=10, checkpoints=(), **_):
     d = problem.dim
     rng = np.random.default_rng(seed)
