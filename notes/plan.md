@@ -1,190 +1,232 @@
-# Critical review: DSA4212 BO vs CMA-ES plan
+# Plan revision 2 (Nov 1): response to review, revised design, next steps
+
+> **APPROVED by Melisa on Nov 1, with the amendments below. Where an amendment conflicts with the body of this plan, the amendment wins. No further plan revisions: problems are logged in `notes/lab_notebook.md`.**
+>
+> **A1. κ=1 is a sanity check only.** A rotated sphere is the same function, so Δ_rot = 0 at κ=1 by construction. It does *not* detect boundary artefacts. **The real null:** a second, independent draw of the aligned instance (different instance seeds), with Δ computed between the two aligned replicates for each method. That Δ is the noise floor for Δ_rot. Verification: *the aligned-vs-aligned replicate Δ has a CI containing 0.*
+>
+> **A2. Budgets** (final values set by the pilot):
+> - d=2: 200, d=3: 200, d=5: 400, d=8: 640, d=10: 1000, d=20: 1000 (2000 only if the pilot shows that is cheap).
+> - E2 runs at about 500 evaluations: it tests rotation, not scaling.
+> - The Fig 3(b) collapse comparison uses d ∈ {2, 3, 5, 8, 10} only.
+> - d=20 is labelled "BO's hard regime"; CMA-ES does not reach its learned-geometry regime there.
+> - Pilot: time one BO iteration at n = 100, 300, 600, 1000, on CPU and on GPU (float64). Use the GPU only where it is faster, and record the device in every result JSON.
+>
+> **A3. H2 primary endpoint, fixed now:** final budget, κ=10⁴, d=10, 30 seeds. All other κ values and budgets are secondary and labelled as such.
+>
+> **A4. BO refit schedule:** refit the GP hyperparameters every 5–10 iterations once n > 100. Document this, and check once on a pilot problem that it doesn't change results (paired CI).
+>
+> **A5. H4:** c* is a quantity derived from measured overhead, not a blind prediction. The "0.1 to 10 s" range is removed.
+>
+> **A6. Tuning wording:** "held-out seeds on the same problem families", not "held-out problems".
+>
+> **A7. H5 implementation:**
+> - Disable CMA-ES's termination criteria.
+> - Flag runs that reach machine-precision f before κ_t < τ.
+> - Cap evaluations at 100·d², raising it only if runs are censored.
+> - Derive the expected α by hand from c_µ, λ and µ_eff before committing it. This replaces "may come out somewhat below 2".
+>
+> **A8. Additions in priority order, once the core plan is on track** (slip rule unchanged: cut c–e first):
+> - a. **Correctness anchor (required):** check the wrappers against a standard reference curve (e.g. COCO/BBOB sphere, or a library baseline) before E1–E3.
+> - b. 30 seeds on the primary H2 endpoint (A3).
+> - c. Compact noise experiment (E5): noisy ellipsoid; compare best-observed, GP posterior mean and CMA-ES mean as the recommendation; score by the true f.
+> - d. Long-budget probe: d=10, κ=10⁴ rotated, 2000 evaluations, 10 seeds. A candidate for the follow-up slot.
+> - e. A second problem family (a few BBOB functions), appendix only.
 
 ## Context
-You handed over a plan for the DSA4212 final assignment, "BO vs evolutionary strategies", and asked for a critical review before any code is written. This file is that review. Nothing gets implemented until you approve.
+The first review and plan (Oct 29) are saved in the repo at `notes/plan.md`, commit `361ce1e`. You then sent six critique points and asked me to check them critically rather than accept them as given. You also want a slot for a **follow-up experiment** after E1–E3, for the rubric's "follow-up on findings". This file is the revised plan. Once approved, it replaces `notes/plan.md`.
 
-### Environment check (read-only, run 2026-10-29)
-| Item | Finding | Implication |
+**Status:**
+- **Done:** repo, uv + Python 3.12 environment, `code/problems.py` (ellipsoid with conditioning and rotation, shifted Rosenbrock), 20 passing unit tests.
+- **Not started:** method wrappers, runner, pilot, all experiments.
+- **Timing:** today is day 4 of 16. The deadline is 13 Nov 2026, 23:59.
+
+---
+
+## 1. Response to each critique point
+
+**1. O(d²) is stated as fact. Agree, with a refinement.** I'll treat it as a hypothesis (H5 below) and check the source myself. Hansen's tutorial sets the covariance learning rates c₁ ≈ 2/d² and c_µ ≈ µ_eff/d². What that implies for the number of evaluations has to be worked out, not quoted.
+
+The proposed test was to see whether the regime map collapses better on evals/d or evals/d². I'll do it, but as a *secondary* view. The BO-vs-CMA crossover mixes two methods' scaling, and BO has no reason to follow d². The cleaner primary test uses CMA-ES alone, which is cheap:
+- Measure CMA-ES's learning time (defined in 2c) on the κ=10⁴ rotated ellipsoid, at 11 dimensions from 2 to 80 with 20 seeds each.
+- Fit the log-log slope α with a bootstrap CI. If the heuristic holds, α ≈ 2. With default λ ≈ 4 + 3 ln d, the slope may come out somewhat below 2, which would be a finding in itself.
+
+**2. "Isotropic BO is unaffected by rotation" needs a qualifier. Agree.** The isotropic kernel is invariant, but the box, the Sobol design and box-constrained acquisition optimisation are not. H2 will now say "approximately invariant, with the size of the deviation measured in E0 and E2".
+
+On "keep the rotated optimum inside the box": for the ellipsoid this is **already guaranteed**. The rotation is about x*, x* is drawn in [0.2, 0.8]^d, and it's the same point for the aligned and rotated instances (unit-tested in `test_aligned_and_rotated_share_optimum`). What remains is subtler: rotation changes how the long axis of the ellipsoid meets the box walls. I'll handle that with two controls:
+- **κ = 1 null check.** A rotated sphere is *the same function*, so I'll run κ=1 once (aligned only). Any aligned-vs-rotated gap at κ>1 then comes from the conditioning interacting with the box, not from rotation as such.
+- **Low-effective-dimension function.** The optimum x* is inside the box by construction. Before E2 I'll also check numerically that uniform samples give similar f-value distributions in the aligned and rotated cases.
+
+**3. Defaults plus sensitivity departs from the original tuning plan. Agree it must be symmetric, and this goes back to the held-out design you started with.**
+- **Same tuning effort:** a 3 × 2 grid of 6 configurations per method.
+  - CMA-ES: σ₀ ∈ {0.15, 0.3, 0.6} × λ ∈ {default, 2×default}.
+  - BO: n_init ∈ {d, 2d, 4d} × Matérn ν ∈ {1.5, 2.5}.
+- **Why ν instead of the kernel:** the brief's "kernel" knob, ARD vs isotropic, is the very factor E2 studies, so tuning it would bias the study.
+- **Held out:** run on two pilot problems (κ=10² rotated ellipsoid at d=10; Rosenbrock at d=5) with **seeds 1000+**, which don't overlap the main-run seeds. 10 seeds per configuration.
+- **Decision rule, fixed now:** keep the default unless another configuration is better on *both* pilot problems and its paired bootstrap CI excludes 0. If it is, adopt that configuration and report it.
+- **Reporting:** an appendix table shows how far each knob moves the result.
+- **Cost:** about 120 BO runs. Roughly half a day or one night with 7 workers.
+
+**4. The scope is large. Agree.** Every experiment now feeds a specific figure or table (section 2b), and methods are limited per experiment (section 2a). Changes:
+- sep-CMA-ES and isotropic BO only in E2.
+- TuRBO only in E2.
+- UCB is cut first, IPOP second.
+- Rotated κ=1 is not run (it's the same function, as above).
+- E4 becomes one table, built from logs.
+
+**5. Put noise in the limitations. Agree.** It's named in the brief, so the limitations section will say explicitly that it wasn't studied and why: time, and the protocol for choosing a recommendation under noise.
+
+**6. Timeline. Agree.** The next gate is the pilot and frozen configs, then E2 runs. One correction on ordering: E0 needs the same CMA-ES wrapper and takes minutes, so it runs during the pilot rather than as a separate step. The revised timeline is in section 4.
+
+---
+
+## 2. Revised design
+
+**Hypotheses** (go into `predictions.md`, committed before the main runs):
+- **H1:** BO's advantage over CMA-ES at a fixed evals/d shrinks as d grows.
+- **H2:** Axis-aligned methods (ARD-BO, sep-CMA-ES) gain on aligned problems and lose that gain when rotated. Isotropic BO and full CMA-ES are *approximately* invariant. The deviations caused by the box and the initial design are quantified.
+- **H3:** P(finding the narrow basin) falls with basin width. CMA-ES restarts recover it at larger budgets, and BO's fitted lengthscale sets the width below which it is missed.
+- **H4:** The break-even evaluation cost c* rises with budget and d, because GP overhead grows with n. Prediction: c* is between 0.1 and 10 s per evaluation at the budgets used.
+- **H5 (new):** CMA-ES's learning time (defined in 2c) scales as d^α. Hansen's heuristic suggests α ≈ 2. We report α̂ with a bootstrap 95% CI and claim "consistent with d²" only if the CI contains 2. To be tested, not assumed.
+
+### 2a. Methods per experiment
+| Method | Sens. | E0 | E1 | E2 | E3 |
+|---|---|---|---|---|---|
+| Sobol | | | ✓ | ✓ | ✓ |
+| CMA-ES (full) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| sep-CMA-ES | | | | ✓ | |
+| IPOP-CMA-ES | | | | | ✓ (cut 2nd) |
+| BO: ARD, LogEI | ✓ | ✓ (monotone transform) | ✓ | ✓ | ✓ |
+| BO: isotropic, LogEI | | | | ✓ | |
+| BO: ARD, UCB | | | | | ✓ (cut 1st) |
+| TuRBO-1 | | | (if time) | ✓ | |
+
+### 2b. Experiment → figure or table (anything without one is dropped)
+**Every figure shows Sobol as a reference** (a line or marker), so we can see whether either method beats sampling with no model at all.
+
+| Output | Source | Content |
 |---|---|---|
-| CPU | AMD Ryzen 9 5900HS, 8 cores / 16 threads | Use about 6–7 worker processes, each with one BLAS/torch thread. |
-| RAM | 15.4 GB | Each torch process uses about 0.3–0.5 GB, so 7 workers is safe. |
-| OS | Windows 11 Home | Multiprocessing uses *spawn*: you need a `__main__` guard, and thread env vars must be set before torch is imported. Keep the laptop plugged in with sleep off for overnight runs. |
-| Python | 3.13.1 (system, `C:\Python313`) | Decided: uv-managed Python 3.12 project environment. The system Python is left untouched. |
-| Packages | numpy, scipy, torch, botorch, gpytorch, cma, matplotlib, pandas: **none installed** | Fresh `requirements.txt` with pinned versions. |
-| uv | 0.13.6 installed (winget) | Ready to use. |
-| git | Installed. The folder is **not** a git repo yet. | `git init` on day 1. The commit timestamp on `predictions.md` is your evidence that you predicted before you ran. |
-| Location | `H:\Backup Laptop Mel\...` | If H: is an external or backup drive, it will be slower and riskier. Run from a local SSD and push to GitHub. (Question below.) |
-| Docs | `assignment_guidelines.md` and `topic_bo_vs_es.md` sit at the root, not in `docs/` | Move them to `docs/`. |
+| **Fig 1** | E2, ellipsoid | **2×2 methods only** (ARD-BO, iso-BO, CMA, sep-CMA) plus the Sobol line. x-axis κ ∈ {1, 10², 10⁴}. (a) Median final log₁₀ gap, aligned and rotated (IQR bars). (b) **Rotation penalty Δ_rot with a paired bootstrap 95% CI** (2d). κ=1 is the null: Δ_rot should be ≈ 0, and anything else means a bug or a boundary artefact. **TuRBO is not in this figure**: its Δ_rot goes in the text and Table 3. |
+| **Fig 2** | E2, low-eff-dim | (a) log₁₀ gap vs evaluations, aligned vs rotated: ARD-BO, iso-BO, CMA, Sobol. (b) Relevance ratio ρ vs n. (c) GP rank correlation vs n. Definitions are in 2c. |
+| **Fig 3** | E1 + H5 | (a) Regime map: median paired difference (BO − CMA) in log₁₀ gap vs evals/d, one line per d. (b) The same against evals/d² (secondary view of collapse). (c) **CMA-ES-only** learning time vs d on log-log axes, d ∈ {2, 3, 5, 8, 10, 15, 20, 30, 40, 60, 80}, with the fitted α̂ and its bootstrap CI. |
+| **Fig 4** | E3 | P(success) vs basin width with Wilson CIs, d ∈ {2, 5}, Sobol included. Success is defined in 2c. |
+| **Fig 5** | Follow-up | **Reserved.** Shares a row with Fig 4 (two half-width panels). |
+| Table 3 | all | Prediction vs outcome, H1–H5 plus the follow-up. Each row gives the **test statistic and its paired CI** (2d). |
+| Table 2 | E4 | Break-even c* by d and target accuracy (about 4 rows). |
+| Table 1 → text | E0 | Invariance audit as about 3 sentences in the text. It becomes a table only if there's room. |
+| Appendix | sensitivity | 6-configuration grids for CMA-ES and BO. |
+
+### 2c. Operational definitions (for the methods section; you should be able to explain each)
+- **Relevance ratio ρ (BO's ARD kernel).**
+  - Inputs live in the unit cube. An ARD kernel measures distance as r² = (x−x′)ᵀ M (x−x′), with M = diag(1/ℓ₁², …, 1/ℓ_d²). Large 1/ℓᵢ² means "the GP thinks f changes quickly along coordinate i".
+  - The low-effective-dimension function depends on x only through A x, where A is d_eff × d with orthonormal rows. P = AᵀA projects onto the directions that matter.
+  - **ρ = tr(PM) / tr(M)** is the share of the kernel's total sensitivity that falls in the relevant directions. It lies in [0, 1].
+  - An isotropic kernel gives exactly ρ = d_eff/d, which is the baseline. A perfect ARD fit on the aligned problem gives ρ → 1.
+  - On the rotated problem, a diagonal M can only reach ρ > d_eff/d where some coordinate axis happens to line up with the relevant subspace, so we expect ρ ≈ d_eff/d.
+  - Computed from the fitted GP at checkpoints n ∈ {25, 50, 100, 150, 200} (adjusted to the final budget).
+- **GP rank correlation.**
+  - At each checkpoint n, take the GP fitted to the n points. Draw m = 200 fresh points from N(x_inc, 0.1² I), clipped to the box, where x_inc is the current best point; this is the region the acquisition function searches.
+  - Compute the **Spearman correlation between the GP posterior mean and the true f** at those points. 1 means the surrogate ranks candidates perfectly; 0 means it is no better than random.
+  - Ranking is what matters for picking the next point, which is why rank correlation is used rather than RMSE.
+- **CMA-ES learning time T(d).**
+  - Use the rotated ellipsoid with κ = 10⁴ and Hessian H. CMA-ES runs **without box bounds**, so the bounds can't interfere with the adaptation being measured, with x₀ ~ U[0,1]^d and σ₀ = 0.3.
+  - After each generation t, compute κ_t = cond(C_t^½ H C_t^½), which equals the eigenvalue ratio of C_t H. It starts at 10⁴ (C₀ = I) and reaches 1 when C ∝ H⁻¹, i.e. when the search distribution has fully learned the geometry.
+  - **T = evaluations until κ_t first drops below τ = 10.** Runs are capped at 10⁴·d² evaluations, and runs that hit the cap are recorded as censored. Robustness: τ ∈ {3, 100} reported in the appendix.
+- **α fit.**
+  - Fit an OLS line to log T against log d (all seeds, 20 per d).
+  - 95% CI by bootstrap: resample seeds within each d, 10,000 times.
+  - Fixed now: the primary fit uses all d, and a secondary fit uses d ≥ 10, to check for small-d effects.
+  - Caveat to state: the default λ = 4 + ⌊3 ln d⌋ grows with d, so α combines learning rate and population-size effects.
+- **Success in E3.**
+  - The decoy-basin function is built as f(x) = min(broad basin, narrow deep basin), with the narrow basin's minimum strictly lower than the decoy's minimum f_decoy.
+  - **Success: f(x_rec) < f_decoy.** That is, the recommended point is better than anything the decoy basin can offer, which is only possible inside the narrow basin.
+  - The definition uses only function values, it is unambiguous, and it doesn't depend on a distance threshold.
+
+### 2d. Uncertainty on differences (the brief asks for this explicitly)
+- **Pairing:** all comparisons pair by seed. Methods share the same instance for a given seed, and the aligned and rotated instances share x*.
+- **Method difference:** for methods A and B at budget b, take each seed's difference Δ = log₁₀ gap_A − log₁₀ gap_B. Report the **median Δ with a 95% percentile bootstrap CI** (10,000 resamples of seeds) and the **paired win rate** P(A < B) with its CI.
+- **H2 statistic:**
+  - Rotation penalty for a method: Δ_rot = log₁₀ gap(rotated) − log₁₀ gap(aligned), paired by seed.
+  - Axis-bias interaction: **Δ_rot(ARD-BO) − Δ_rot(iso-BO)**, and likewise **Δ_rot(sep-CMA) − Δ_rot(CMA)**, each with a bootstrap CI.
+  - H2 is supported if both interactions are > 0 and their CIs exclude 0.
+- Table 3 gives, for each hypothesis, the statistic, its point estimate, its CI, and the verdict.
+
+### 2e. Page budget (8 pages target, hard cap 10)
+| Section | Pages |
+|---|---|
+| Title, intro, hypotheses | 1.0 |
+| Methods + definitions | 1.5 |
+| Results: E2 (Figs 1–2) | 1.5 |
+| Results: E1 + H5 (Fig 3) | 0.9 |
+| Results: E3 + follow-up (Figs 4/5, one row) | 1.0 |
+| Results: E0/E4 text + Table 2 | 0.4 |
+| Discussion and limitations (incl. noise) | 0.7 |
+| References | 0.5 |
+| Appendix (sensitivity, τ robustness) | 0.5 |
+| **Total** | **≈ 8.0** |
+
+If it runs over, cut in this order: Table 2 → text, then shorter E0 text, then move Fig 2(c) to the appendix.
+
+**Unchanged from revision 1:**
+- Shared unit box, with 2d Sobol initial points counted in the budget.
+- Paired seeds: main runs use seeds 0–19 (0–29 for E3); tuning uses 1000+.
+- Metrics: log₁₀ gap of the true objective; median and IQR; paired win rate with bootstrap CIs.
+- Diagnostics; auto-generated `numbers.tex`; Overleaf report of at most 8 pages; noise listed under limitations.
 
 ---
 
-## a) Problem and rubric in my words
-The task is to explain *when and why* surrogate-based BO beats or loses to ranking-based CMA-ES on black-box problems. The explanation has to be stated up front and then tested with controlled, repeated, fairly budgeted experiments. Marks: 25% understanding (correct mechanisms, sources, justified choices), 35% experimental design (controlled comparisons and **follow-up on surprises**), 20% analysis (evidence-based claims and honest limits), 20% reproducibility (a repo that regenerates every reported number). Depth and mechanism are worth more than coverage. A well-investigated negative result is explicitly acceptable.
+## 3. Follow-up experiment slot (new)
+- **Reserved:** about 1.5 days (Nov 7–8), one overnight of compute, Fig 5 (a half-width panel next to Fig 4), and about 0.5 pages.
+- **Process:**
+  1. After E1–E3, list surprises in `notes/lab_notebook.md`.
+  2. Pick the one whose explanation is most testable.
+  3. Write its prediction into `predictions.md` and commit it, timestamped, **before** running.
+  4. Report it whether or not the prediction holds.
+- **Examples only, not committed to:**
+  - If ARD-BO's rotation penalty is small, test whether it grows with κ or shrinks with budget. That would show whether the GP is "rescued" by data.
+  - If α in H5 is well below 2, vary λ to separate generations from evaluations.
+  - If TuRBO matches CMA-ES on rotated problems, swap TuRBO's axis-aligned trust region for an isotropic one.
+  - If E3 shows BO missing basins, vary the lengthscale prior to test the mechanism.
 
 ---
 
-## b) Verdict on each part of section 3
+## 4. Revised timeline (today Nov 1 = day 4)
+| Date | Work | Gate |
+|---|---|---|
+| Nov 1 | Method wrappers (Sobol, CMA/sep/IPOP, BO ARD/iso LogEI/UCB, TuRBO-1); single-run runner with timing split; low-eff-dim function + tests | `pytest` passes; quick smoke run |
+| Nov 2 | Timing pilot (BO s/iteration at d=2/10/20); E0 invariance; sensitivity grid overnight | Budgets fixed |
+| Nov 3 | Apply decision rule; freeze configs; **commit `predictions.md`**; start **E2 overnight** | Predictions committed |
+| Nov 4 | E2 analysis + diagnostics; H5 learning-time runs (CMA only, d up to 80, 20 seeds); **E1 overnight** | Figs 1–2 drafts |
+| Nov 5 | E1 analysis + α fit; decoy-basin function + tests; **E3 run** | Fig 3 draft |
+| Nov 6 | E3 analysis; E4 table from logs; choose follow-up, commit its prediction | Fig 4, Table 2 |
+| Nov 7–8 | **Follow-up experiment** | Fig 5 |
+| Nov 9–12 | Final figures and `numbers.tex`; you write the report in Overleaf | Draft by Nov 11 |
+| Nov 13 | Clean-clone check; download Overleaf source into `report/`; submit (23:59) | Submitted |
 
-### 3.1 Central claim: **agree, but sharpen it**
-"It depends on the inductive bias" is true but hard to falsify. I would make it mechanistic and quantitative: *BO's advantage comes from a surrogate whose assumptions (smoothness, axis-aligned relevance through ARD) pay off from the first few evaluations. CMA-ES's geometric advantage (learning the covariance) only appears after roughly O(d²) evaluations. So the winner is set by the budget-to-dimension ratio and by whether the structure is axis-aligned.* The second sentence is the real insight. With default pycma at d=10, the rank-µ learning rate is about 2/d², so covariance learning needs hundreds to thousands of evaluations. **Within the budgets BO can afford, CMA-ES has mostly not learned the geometry yet.** That changes how H2 should be read (see below).
-
-### Hypotheses
-- **H1 (agree, improve).** This is the known result. Two changes make it testable:
-  - Express budget as **evaluations / d**, COCO-style, so dimensions are comparable.
-  - Commit to a direction *and a magnitude*, e.g. "the budget/d at which CMA-ES's median log-gap matches BO's falls as d grows".
-
-  One caveat to check against the docs: BoTorch ≥0.12 changed the default lengthscale priors to dimension-scaled ones (Hvarfner et al., ICML 2024, "Vanilla BO performs great in high dimensions"). Modern vanilla BO may degrade with d much less than older papers suggest. H1 could partly fail, and that would be interesting.
-- **H2 (agree on BO's side, misframed on CMA-ES's side).** The CMA-ES half, "CMA-ES does not degrade under rotation", is true by construction: an isotropic start is rotation-invariant. That makes it a sanity check, not a finding. The informative comparison is a **2×2 axis-bias ablation in both families**:
-
-  |  | Exploits axis alignment | Rotation-invariant |
-  |---|---|---|
-  | BO | ARD kernel | isotropic kernel |
-  | ES | sep-CMA-ES (diagonal covariance; pycma option) | full CMA-ES |
-
-  Prediction: the members that exploit axis alignment win when the structure is aligned and lose that advantage when it is rotated. The rotation-invariant members are unaffected. That gives a symmetric, mechanistic test instead of "BO bad, CMA good".
-- **H3 (keep as exploratory, but make it falsifiable).** Turn it into a curve: P(find narrow basin) as a function of **basin width** (one knob), at a fixed budget, for each method. Commit to the sign, e.g. "a GP with fitted lengthscales misses basins narrower than its lengthscale; IPOP restarts recover them at a higher budget".
-- **H4 (as written it is close to a tautology).** "BO wins on wall-clock above the break-even cost" is true by definition. What you can predict is the break-even cost c*, its **magnitude**, and how it **scales** with d, budget and target accuracy. GP overhead grows with n, so c* rises with budget. Also say clearly that evaluation cost is *simulated*: your test functions take microseconds, so wall-clock = measured optimiser overhead + n·c.
-
-### 3.3 Methods: **improve**
-- Use **LogEI** (`qLogExpectedImprovement`, Ament et al., NeurIPS 2023) instead of plain EI. BoTorch now recommends it because EI has vanishing-gradient problems. Plain EI would be a reviewer's easy criticism.
-- Add **sep-CMA-ES**. It costs nothing and completes the 2×2.
-- **Promote TuRBO-1 from stretch to core**, at least in E1 and E2. It is in the brief's own reading list, and the marker expects it. It is the natural "local BO" bridge between the two families. Its trust region is also axis-aligned and scaled by ARD lengthscales, so it *also* belongs in the H2 analysis. BoTorch has an official TuRBO-1 tutorial implementation we can adapt and cite.
-- Drop the hybrid: **agree**.
-- Keep the Sobol baseline: **agree**.
-
-### 3.4 Fairness protocol: **mostly agree. Replace full tuning with defaults plus a sensitivity analysis.**
-- A held-out tuning protocol for 4–5 methods is a lot of extra compute and writing. It mostly re-derives library defaults that are already tuned. Cheaper and more informative: use **documented defaults** (CMA-ES σ₀ = 0.3 × range per Hansen's tutorial; BO n_init = 2d Sobol points, counted in the budget), then run a **sensitivity check** on one pilot problem (σ₀ ×{0.5, 1, 2}; n_init ∈ {d, 2d, 4d}). The rubric rewards "sensitivity to assumptions" directly, and this addresses it.
-- Initial information: CMA-ES x₀ is a seeded uniform point in the box, *not* the centre. Optima are placed randomly inside the box, away from its centre, to avoid centre bias. All methods work in the same normalised box [0,1]^d.
-- Paired instances across methods: **agree**.
-
-### 3.5 Metrics and statistics: **agree, a few additions**
-- Primary metric: **log10 gap** of the true objective at the recommended point. Read the whole trajectory from one long run: **agree**.
-- Summaries: median and IQR, plus a **paired win rate** P(BO better than CMA on the same instance) with a bootstrap CI. Win rate is easy to read and handles heavy tails.
-- Report effect sizes with CIs rather than many p-values. There are many comparisons.
-- A COCO-style ECDF of runtime-to-target: use it for **one** aggregate figure only.
-- Timing: separate method overhead (fit and acquisition, or ask/tell) from function evaluation time. **Agree.**
-
-### 3.6 Experiments: **too many for 8 pages. Restructure.**
-- **E2 (centrepiece, agree)**, plus two cheap but strong additions:
-  - **Exact invariance tests.** For the *same seed*, CMA-ES on f and on g∘f (g strictly increasing) should give *identical* trajectories. Without bounds, CMA-ES on a rotated problem with a rotated x₀ should give the rotated trajectory, path by path. Then turn on box bounds and *measure* how far invariance breaks. Do the same for BO: it is not invariant to monotone transforms, so compare f vs log f on the ellipsoid. This is exactly the brief's "which invariances survive practical implementation" question, it costs minutes of compute, and it makes a clean table.
-  - **A design fix for the low-effective-dimension function.** Use f(x) = g(A(x − x*)) with orthonormal A (2×20). The confound to watch: a random rotation changes the shape of the projected box, so the reachable region of g differs between the aligned and rotated cases. Keep x* inside the box with margin, and choose g, e.g. a quadratic or a shifted Branin-like function, so that its optimum is reachable in both cases. Check numerically that the f-value distribution of uniform samples is similar across the two cases.
-- **E1 (agree, reshape)**: d ∈ {2, 5, 10, 20}, budget cap set by a **timing pilot**. Run CMA-ES (which is cheap) far beyond BO's cap, e.g. to 50·d², and show where it overtakes. The regime map's axes are d × evaluations/d.
-- **E3 (shrink)**: one hand-made function with a broad decoy basin and a narrow deep basin, a basin-width knob, and d ∈ {2, 5}. CMA-ES default / IPOP restarts (pycma `cma.fmin` with `restarts` and `incpopsize`); BO LogEI vs UCB. Use Wilson CIs: **agree**. Rastrigin is optional; the knob gives a curve, which is more useful than another benchmark.
-- **E4 (agree as analysis-only)**: half a figure built from logged timings. Model parallelism analytically and label it as a model. Skip batch BO.
-- **E5 noise: drop it from the plan now**, rather than cutting it later. Mention it in limitations.
-- **BBOB/COCO**: don't use the `cocoex` package (it is harder to control budgets and instances). Implement BBOB-*style* functions (ellipsoid f10, rotated Rosenbrock f9) yourself, with unit tests, and cite COCO for the definitions.
-
-### 3.7 Mechanism diagnostics: **agree. This is where the marks are. Make them concrete.**
-- **BO, relevance alignment.** With the ARD metric M = diag(1/ℓ²) and true projector P = AᵀA, compute **tr(PM)/tr(M)**. Expect about 1 when aligned and at most about 2/20 = 0.1 when rotated: a diagonal metric *cannot* concentrate on an off-axis subspace. Raw lengthscale plots don't show this as directly.
-- **BO, surrogate quality.** Spearman rank correlation of the GP posterior mean on fresh points near the incumbent, as n grows, aligned vs rotated and across d. This measures directly whether the surrogate is useful.
-- **CMA-ES, geometry learned.** On quadratics, track cond(C^{1/2} H C^{1/2}) over evaluations. It should fall towards 1, and the plot shows *when* CMA-ES learns the geometry compared with BO's budget. This one figure could carry the whole story.
-- σ trajectory: optional.
-
-### 3.8 Report plan: **agree.** Planned figures: (1) geometry 2×2 plus the relevance diagnostic, (2) regime map, (3) CMA-ES learning-time curve, (4) multimodality curve, plus half a figure for cost. Prediction-vs-outcome table and invariance table. Write the **numbers into LaTeX automatically** (scripts emit `report/generated/numbers.tex` with `\newcommand` macros and table `.tex` files). Then no number in the PDF is typed by hand, which is the strongest defence if the report is checked against the repo by AI.
-
-### 3.9 Reproducibility: **agree.** Additions: `OMP_NUM_THREADS=1` and `torch.set_num_threads(1)` per worker; one JSON result file per (config hash, method, seed) so runs resume; record package versions and git commit in each result; a quick mode under 10 minutes; a final check from a clean clone.
-
-### 3.11 Cut order: **agree with modifications.** New order: UCB in E3, then d=20 in E1, then TuRBO in E1 (keep it in E2), then reduce seeds (never below 15). Never cut E2, the diagnostics, or the invariance tests.
-
-### CPU feasibility (estimate; the **pilot must measure this**)
-BoTorch on CPU at n ≤ 300 and d ≤ 20 takes roughly 0.5–3 s per iteration (GP fit plus optimising the acquisition function with about 10 restarts and 512 raw samples). That is roughly 3–10 min per 300-evaluation run. A rough count with 7 workers:
-- E2: about 8 problems × 3 BO-type methods × 20 seeds ≈ 480 runs at budget about 200 → **about 4–6 h**
-- E1: about 8 settings × 2 BO-type methods × 20 seeds ≈ 320 runs → **about 4–6 h**
-- E3: small d, budget about 100 → **about 1 h**
-- Sensitivity checks plus invariance tests → **about 1 h**
-- CMA-ES/Sobol, all runs → **minutes**
-
-That is **about 10–15 h in total**: two or three overnight runs. It is feasible, with headroom for one round of follow-up. If the pilot shows over 3 s per iteration at d=20, cap d=20 at 200 evaluations or reduce `raw_samples`.
-
-### Biggest risks against the rubric
-1. **Breadth over depth** (35% exploration). Fix: fewer experiments, more diagnostics, and a planned slot for following up surprises.
-2. **A known result with no mechanism** ("BO wins early"). Fix: the CMA learning-time curve and the relevance diagnostic.
-3. **Straw-man BO or CMA-ES.** Fix: LogEI, TuRBO, defaults from the libraries' own guidance, sensitivity checks.
-4. **Mismatch between report and repo** (20%). Fix: auto-generated numbers and tables, and a clean-clone check.
-5. **Integrity, "genuine engagement".** Fix: *you* write the report prose. Keep a dated `notes/lab_notebook.md` of decisions and surprises, commit `predictions.md` before the main runs, and read the four starter references yourself. I will explain each design choice as we go.
-6. **Compute surprises on Windows.** Fix: the timing pilot on day 2 decides the budgets.
+**Slip rule:** if a gate is missed by more than half a day, apply the cut order: UCB → IPOP → TuRBO in E1 → d=20 in E1 → seeds down to 15. E2, the diagnostics, the sensitivity grid and the follow-up slot are never cut.
 
 ---
 
-## c) Recommended final design (★ = my change)
-1. **Methods:** Sobol; CMA-ES (pycma defaults, σ₀ = 0.3); ★sep-CMA-ES; ★IPOP-CMA-ES (E3); BO = SingleTaskGP, Matérn-5/2 ARD, ★LogEI, BoTorch default priors, normalise/standardise; BO-isotropic (E2); BO-UCB (E3); ★TuRBO-1 (E1, E2).
-2. **Protocol:** shared normalised box, Sobol initial design of size 2d counted in the budget, random x₀ and optima, paired seeds (20; 30 for E3), ★defaults plus a sensitivity check instead of held-out tuning.
-3. **Experiments:** ★E0 invariance tests (exact, cheap) → E2 geometry with the ★2×2 axis-bias ablation and the ★corrected low-effective-dimension design → E1 regime map with ★budget/d axes and ★long CMA-ES runs → E3 ★basin-width curve → E4 cost analysis (★H4 reframed as the magnitude and scaling of c*). ★E5 removed.
-4. **Diagnostics:** ★tr(PM)/tr(M), ★GP rank correlation, ★cond(C^{1/2}HC^{1/2}) over time.
-5. **Statistics:** log10 gap, median/IQR, ★paired win rate with bootstrap CI, Wilson CIs, one ECDF.
-6. **Report:** ≤8 pages, ★auto-generated `numbers.tex` and tables, prediction-vs-outcome table.
+## 5. Implementation for the next session (Nov 1–2)
+**Files to create:**
+- `code/methods/sobol.py`, `cmaes.py` (full/sep/IPOP via pycma), `bo.py` (SingleTaskGP, ARD or isotropic Matérn, LogEI/UCB), `turbo.py` (adapted from BoTorch's TuRBO-1 tutorial, with a citation)
+  - Every method exposes the same interface: `run(problem, budget, seed, **cfg) → trajectory`. Each record holds x, f, the incumbent recommendation, and overhead time.
+- `code/runner.py`: one (config, method, seed) → one JSON file, recording package versions and the git commit.
+- `code/run_experiment.py`: process pool with `OMP_NUM_THREADS=1` and `torch.set_num_threads(1)`, a `__main__` guard (Windows spawn), resume by config hash, and `--quick`.
+- `code/problems.py`: add `low_effective_dim(d, d_eff, rotated, seed)`, reusing `random_rotation` and `_sample_optimum`.
+- `code/tests/test_invariance.py`: same seed → identical CMA-ES trajectory for f vs g∘f; rotated problem with rotated x₀ and no bounds → rotated trajectory.
+- `configs/pilot.yaml`, `configs/sensitivity.yaml`.
+- Replace `notes/plan.md` with this revision.
 
-### Suggested timeline (Oct 29 → about Nov 13)
-- **Oct 29–30:** venv, git, test functions plus unit tests, method wrappers, invariance tests.
-- **Oct 31:** timing pilot and sensitivity checks; set budgets; **commit `predictions.md`**.
-- **Nov 1–5:** E2 and E1 overnight runs; diagnostics.
-- **Nov 6–7:** E3 and E4.
-- **Nov 8:** reserved for follow-up on surprises.
-- **Nov 9–12:** figures and report (you write).
-- **Nov 13:** clean-clone reproduction check and submission.
+**Other steps:**
+- **Before writing the wrappers:** check the current pycma 4.5 and BoTorch 0.18 APIs (option names for sep-CMA/`CMA_diagonal`, IPOP via `cma.fmin2` restarts, `qLogExpectedImprovement`, isotropic kernel setup) against the installed packages and docs, not from memory.
+- **Commits:** small, under `Melisa <melisathevandi@gmail.com>`, with no co-author line (your standing instruction).
 
----
-
-## d) Decisions (answered 2026-10-29)
-1. **Solo:** Melisa Abigail Thevandi, A0288030J. Because you are working alone, scope stays tight: TuRBO is core in **E2**, and it goes into E1 only if the pilot shows spare compute. UCB in E3 is first on the cut list.
-2. **Deadline:** 13 Nov 2026, 23:59. The timeline above stands, with Nov 13 kept as a buffer only.
-3. **Location:** keep working in the H: external SSD folder. Push to your **private** GitHub repo and **invite `alexxthiery`** as a collaborator before submitting.
-4. **Accepted:** drop E5, defaults plus a sensitivity check, TuRBO core, sep-CMA-ES, invariance tests.
-5. **Overleaf:** scripts write `report/figures/` and `report/generated/*.tex`, and you upload those to Overleaf. At the end, download the Overleaf source zip into `report/` so the repo holds the exact submitted source. The clean-clone check then compares `generated/numbers.tex` against it.
-6. **Environment:** **uv** with **Python 3.12**, pinned via `.python-version`. 3.12 has the safest torch/botorch wheels on Windows, and uv installs it without touching your system 3.13. Use `pyproject.toml` plus `uv.lock`, and the readme says to run `uv sync` then `uv run ...`. `requirements.txt` is replaced by `uv.lock`.
-7. **References not read yet.** Suggested reading, done alongside days 1–3: Hansen's CMA-ES tutorial (sections on invariance, learning rates and step-size control: the basis of the "O(d²) learning time" argument); Frazier's BO tutorial (GP, EI, noise); the TuRBO paper (motivation and trust-region rule); COCO (budgets/d, ECDFs, instances). I will point to the relevant section whenever a design choice depends on it.
-
----
-
-## e) Repo skeleton (proposed)
-```
-bo-vs-cmaes/
-├── readme.md                 # setup, quick/full reproduction, figure ↔ script map
-├── authors.md
-├── pyproject.toml            # uv project, deps
-├── uv.lock                   # pinned versions
-├── .python-version           # 3.12
-├── predictions.md            # committed before main runs
-├── docs/
-│   ├── assignment_guidelines.md
-│   └── topic_bo_vs_es.md
-├── notes/
-│   └── lab_notebook.md       # dated decisions, surprises, failed attempts
-├── configs/
-│   ├── pilot.yaml
-│   ├── e0_invariance.yaml
-│   ├── e1_dimension.yaml
-│   ├── e2_geometry.yaml
-│   └── e3_multimodal.yaml
-├── code/
-│   ├── problems.py           # ellipsoid, rosenbrock, low-eff-dim, decoy-basin; rotations
-│   ├── methods/
-│   │   ├── sobol.py
-│   │   ├── cmaes.py          # full / sep / IPOP via pycma
-│   │   ├── bo.py             # GP + LogEI/UCB, ARD/iso
-│   │   └── turbo.py
-│   ├── runner.py             # one (config, method, seed) → results JSON, timing split
-│   ├── run_experiment.py     # parallel pool, resume by hash, --quick
-│   ├── diagnostics.py        # relevance ratio, GP rank corr, CMA cond(C^½HC^½)
-│   ├── analysis.py           # stats, bootstrap, Wilson
-│   ├── make_figures.py       # every figure + numbers.tex + tables
-│   └── tests/
-│       ├── test_problems.py  # f(x*)=f*, rotation correctness
-│       └── test_invariance.py
-├── results/
-│   ├── raw/<experiment>/<hash>_<method>_<seed>.json
-│   └── summary/              # aggregated CSVs
-└── report/
-    ├── report.tex
-    ├── references.bib
-    ├── figures/              # generated
-    └── generated/            # numbers.tex, tables
-```
-
-## Verification (once implementation starts)
-- Unit tests: every test function attains f* at x*, and rotations are orthogonal.
-- Exact invariance tests pass for CMA-ES (identical trajectories) before any main run.
-- Quick mode finishes in under 10 minutes and regenerates placeholder figures.
-- Final check: from a clean clone, `run_experiment --quick` then `make_figures` rebuild `numbers.tex`. Diff it against the submitted version.
-
-**References to verify yourself before citing** (I am fairly confident but have not checked them in this session): Frazier 2018 BO tutorial (arXiv:1807.02811); Hansen 2016 CMA-ES tutorial (arXiv:1604.00772); Eriksson et al. 2019 TuRBO (NeurIPS); Hansen et al. 2021 COCO (Optim. Methods Softw.); Ament et al. 2023 LogEI (NeurIPS); Hvarfner et al. 2024 (ICML); Auger & Hansen 2005 IPOP-CMA-ES (CEC); Ros & Hansen 2008 sep-CMA-ES (PPSN).
+## Verification
+- `uv run pytest`: problem tests plus the invariance tests pass (CMA-ES exactly invariant to monotone transforms; invariant to rotation when unbounded).
+- `run_experiment.py --quick` finishes in under 10 minutes and writes JSONs that resume correctly when rerun.
+- Timing pilot output is saved in `results/summary/pilot_timing.csv` and used to fix the budgets in the configs.
+- Unit tests for the diagnostics:
+  - ρ = d_eff/d exactly for an isotropic M, and ρ = 1 for an M supported only on the relevant aligned coordinates.
+  - κ_t = 1 when C = H⁻¹.
+  - The decoy function: f_decoy is attained in the broad basin, and the narrow basin's minimum is below it.
+- κ=1 null check: in E2, Δ_rot at κ=1 has a CI containing 0 for every method. If not, stop and investigate before reading any other result.
