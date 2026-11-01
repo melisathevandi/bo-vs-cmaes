@@ -58,3 +58,11 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   bound handling or the box size relative to sigma0.
 - At kappa=1e4 the median gap after 1000 evaluations is about 10^1.5-10^2, i.e. CMA-ES is still in its
   geometry-learning phase at this budget (relevant for H5 and the E2 budget).
+
+## 2026-11-01 (correctness anchor, A8a: passed)
+- `code/anchor.py` -> `results/summary/anchor.csv`.
+- CMA-ES wrapper evaluates exactly the same points as `cma.fmin2` on the same bounded problem, start and seed
+  (10/10 seeds, d=8 rotated ellipsoid, 200 evaluations).
+- Branin (d=2), 40 evaluations, 10 seeds, threshold median gap < 0.01 fixed beforehand:
+  BO (ARD, LogEI) median 1.0e-3 (max 6.4e-3); TuRBO median 2.3e-3 (max 5.1e-3); Sobol with 40 evaluations 1.07 and
+  with 400 evaluations 0.11.
