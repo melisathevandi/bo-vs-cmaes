@@ -1,0 +1,33 @@
+# Pipeline smoke test: tiny budgets, checks that runner, resume and JSON output work.
+experiment = "smoke"
+budget = 40
+seeds = [0, 1]
+
+[[problems]]
+name = "ell_d5_k100_aligned"
+family = "ellipsoid"
+d = 5
+kappa = 100.0
+rotated = false
+
+[[problems]]
+name = "ell_d5_k100_rotated"
+family = "ellipsoid"
+d = 5
+kappa = 100.0
+rotated = true
+
+[[methods]]
+name = "sobol"
+module = "sobol"
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "bo_ard"
+module = "bo"
+[methods.cfg]
+num_restarts = 3
+raw_samples = 64
