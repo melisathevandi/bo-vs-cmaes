@@ -1,0 +1,39 @@
+# Amendment A4: does the GP refit schedule (warm start, refit every 5 or 10 iterations once
+# n > 100) change the optimisation results? Paired by seed, held-out seeds (1000+).
+# Reference = cold-start refit every 5 iterations (the original, slower setting).
+experiment = "a4_refit_check"
+budget = 300
+seeds = [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009]
+
+[[problems]]
+name = "ell_d5_k100_rotated"
+family = "ellipsoid"
+d = 5
+kappa = 100.0
+rotated = true
+
+[[problems]]
+name = "rosenbrock_d5"
+family = "rosenbrock"
+d = 5
+
+[[methods]]
+name = "bo_cold_every5"
+module = "bo"
+[methods.cfg]
+warm_start = false
+refit_every = 5
+
+[[methods]]
+name = "bo_warm_every5"
+module = "bo"
+[methods.cfg]
+warm_start = true
+refit_every = 5
+
+[[methods]]
+name = "bo_warm_every10"
+module = "bo"
+[methods.cfg]
+warm_start = true
+refit_every = 10

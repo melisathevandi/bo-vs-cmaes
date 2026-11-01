@@ -45,14 +45,14 @@ def build_model(train_x, train_y, ard, nu):
     return SingleTaskGP(train_x, train_y, covar_module=kernel)
 
 
-def fit(model, saved):
+def fit(model, saved, warm=True):
     """Fit hyperparameters by maximum marginal likelihood.
 
     Warm start: the optimiser begins at the previously saved hyperparameters, which is
     much cheaper than starting from the defaults at every refit. If it fails, the saved
     values are kept. Returns the (kernel, likelihood) state to reuse at the next iterations.
     """
-    if saved is not None:
+    if saved is not None and warm:
         load(model, saved)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -87,8 +87,8 @@ def rank_correlation(model, problem, x_inc, rng, m=200, radius=0.1):
 
 
 def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
-        beta=4.0, refit_after=100, refit_every=5, log_y=False, raw_samples=512,
-        num_restarts=10, checkpoints=(), **_):
+        beta=4.0, refit_after=100, refit_every=5, warm_start=True, log_y=False,
+        raw_samples=512, num_restarts=10, checkpoints=(), **_):
     d = problem.dim
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -117,7 +117,7 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
         refit = (saved is None or tracker.n <= refit_after
                  or tracker.n - last_fit_n >= refit_every or at_checkpoint)
         if refit:
-            saved = fit(model, saved)
+            saved = fit(model, saved, warm_start)
             last_fit_n = tracker.n
         else:
             load(model, saved)
@@ -143,4 +143,4 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
 
     return tracker.result(method="bo", acq=acq, ard=ard, nu=nu, n_init=n_init,
                           log_y=log_y, refit_after=refit_after, refit_every=refit_every,
-                          diagnostics=diag)
+                          warm_start=warm_start, diagnostics=diag)
