@@ -7,8 +7,9 @@ same job twice reproduces the same file, and finished jobs are skipped (resume).
             "problem": {"family": ..., "d": ..., ...},
             "method": {"name": str, "module": str, "cfg": {...}}}
 
-`seed` drives the method's randomness; `instance_seed` drives the problem instance
-(location of the optimum, rotation). Paired comparisons give every method the same pair.
+`seed` drives the method's randomness (through methods.base.method_seed, so its streams are
+independent of the instance); `instance_seed` drives the problem instance (location of the
+optimum, rotation). Paired comparisons give every method the same pair.
 """
 
 import hashlib
@@ -21,6 +22,7 @@ from pathlib import Path
 import numpy as np
 
 import problems
+from methods.base import method_seed
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "results" / "raw"
@@ -74,7 +76,8 @@ def run_job(spec, out_dir=None):
     problem = make_problem(spec["problem"], spec["instance_seed"])
     method = import_module(f"methods.{spec['method']['module']}")
     start = time.perf_counter()
-    result = method.run(problem, spec["budget"], spec["seed"], **spec["method"]["cfg"])
+    result = method.run(problem, spec["budget"], method_seed(spec["seed"]),
+                        **spec["method"]["cfg"])
     wall = time.perf_counter() - start
 
     commit, dirty = _git_state()

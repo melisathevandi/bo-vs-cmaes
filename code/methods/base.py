@@ -10,6 +10,16 @@ import time
 import numpy as np
 
 
+def method_seed(seed):
+    """Seed for a method's random streams, independent of the instance seed.
+
+    Problem instances are drawn with default_rng(instance_seed). If a method used the same
+    number directly, its random start would be a function of the optimum's location. Mixing
+    in a constant through SeedSequence gives an unrelated stream.
+    """
+    return int(np.random.SeedSequence([seed, 7919]).generate_state(1)[0])
+
+
 class Tracker:
     def __init__(self, problem, budget):
         self.problem = problem
