@@ -45,6 +45,29 @@ def build_model(train_x, train_y, ard, nu):
     return SingleTaskGP(train_x, train_y, covar_module=kernel)
 
 
+def fit(model, saved):
+    """Fit hyperparameters by maximum marginal likelihood.
+
+    If the optimiser fails, fall back to the previously saved hyperparameters.
+    Returns the (kernel, likelihood) state to reuse at the next iterations.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            fit_gpytorch_mll(ExactMarginalLogLikelihood(model.likelihood, model))
+        except Exception:
+            if saved is not None:
+                load(model, saved)
+    return (copy.deepcopy(model.covar_module.state_dict()),
+            copy.deepcopy(model.likelihood.state_dict()))
+
+
+def load(model, saved):
+    """Reuse saved hyperparameters with the model's current data."""
+    model.covar_module.load_state_dict(saved[0])
+    model.likelihood.load_state_dict(saved[1])
+
+
 def lengthscales(model, d):
     """Lengthscale vector of length d (an isotropic kernel's scalar is repeated)."""
     ls = model.covar_module.base_kernel.lengthscale.detach().numpy().ravel()
@@ -91,20 +114,10 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
         refit = (saved is None or tracker.n <= refit_after
                  or tracker.n - last_fit_n >= refit_every or at_checkpoint)
         if refit:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    fit_gpytorch_mll(ExactMarginalLogLikelihood(model.likelihood, model))
-                except Exception:       # keep going with the last good hyperparameters
-                    if saved is not None:
-                        model.covar_module.load_state_dict(saved[0])
-                        model.likelihood.load_state_dict(saved[1])
-            saved = (copy.deepcopy(model.covar_module.state_dict()),
-                     copy.deepcopy(model.likelihood.state_dict()))
+            saved = fit(model, saved)
             last_fit_n = tracker.n
         else:
-            model.covar_module.load_state_dict(saved[0])
-            model.likelihood.load_state_dict(saved[1])
+            load(model, saved)
 
         if at_checkpoint:
             pending.pop(0)
