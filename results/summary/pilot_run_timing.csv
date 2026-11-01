@@ -1,0 +1,10 @@
+experiment,problem,method,seed,wall_min,restarts
+pilot_turbo,ell_d10_k1e4_rotated_n1000,turbo,0,32.1083802866667,5.0
+pilot_turbo,ell_d10_k1e4_rotated_n500,turbo,0,17.346851614999952,2.0
+pilot_turbo,ell_d10_k1e4_rotated_n1000,turbo,1,25.48840714666682,5.0
+pilot_turbo,ell_d10_k1e4_rotated_n500,turbo,1,13.08445662833304,2.0
+pilot_turbo,ell_d20_k1e4_rotated_n1000,turbo,0,54.54014889000003,2.0
+pilot_turbo,ell_d20_k1e4_rotated_n1000,turbo,1,53.072267698333114,2.0
+pilot_bo,ell_d10_k1e4_rotated_n500,bo_ard_every5,1,36.98201511333318,
+pilot_bo,ell_d10_k1e4_rotated_n500,bo_ard_every5,2,36.488580560000266,
+pilot_bo,ell_d10_k1e4_rotated_n500,bo_ard_every5,0,38.90541277166679,

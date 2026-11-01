@@ -1,0 +1,18 @@
+# BO timing calibration (cost only): real runs at the E2 primary setting, cold GP refits every 5
+# iterations, 3 seeds. Used to calibrate the compute estimator in code/compute_plan.py.
+experiment = "pilot_bo"
+budget = 500
+seeds = [0, 1, 2]
+
+[[problems]]
+name = "ell_d10_k1e4_rotated_n500"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = true
+
+[[methods]]
+name = "bo_ard_every5"
+module = "bo"
+[methods.cfg]
+refit_every = 5
