@@ -66,3 +66,15 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - Branin (d=2), 40 evaluations, 10 seeds, threshold median gap < 0.01 fixed beforehand:
   BO (ARD, LogEI) median 1.0e-3 (max 6.4e-3); TuRBO median 2.3e-3 (max 5.1e-3); Sobol with 40 evaluations 1.07 and
   with 400 evaluations 0.11.
+
+## 2026-11-01 (H5 expected exponent; predictions review)
+- Review of the draft `predictions.md` found an error in the H5 derivation: the numerator of c1 + c_mu is
+  2 mu_eff - 2 + 2/mu_eff, not 2 + 2 mu_eff (the -4 + 2/mu_eff term from c_mu was dropped).
+- Checked numerically with the learning rates pycma actually uses (`code/h5_expected_alpha.py`):
+  the lambda / numerator factor is almost constant in d (log-log slope about -0.005), so it does not change alpha.
+  Rate-based expected alpha: 1.71 (d in [2, 80]) and 1.87 (d >= 10) with pycma 4.5.0; 1.69 / 1.86 with the
+  tutorial formulas. pycma's c1 matches the tutorial; its c_mu is 10-50% larger.
+- Consequence: the draft prediction "CI for d >= 10 contains 2" was not what the rates predict at finite d.
+  The prediction now compares the fitted alpha with the rate-based value 1.87.
+- Decision: UCB stays in E3 (H3 makes a UCB-vs-LogEI prediction; E3 is at d <= 5 and cheap), so it is no longer
+  on the cut list for E3.
