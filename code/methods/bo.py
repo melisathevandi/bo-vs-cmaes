@@ -11,10 +11,13 @@ while n <= refit_after, then every refit_every iterations. Between refits the pr
 hyperparameters are reused with the new data. Each refit starts from BoTorch's defaults
 (cold); warm-started refits are optional (warm_start=True) but changed results, see A4.
 
-Diagnostics (E2): at each n in `checkpoints` the model is refitted and we record the
-lengthscales and the Spearman rank correlation between the GP posterior mean and the
-true f on fresh points around the incumbent. Those extra evaluations of f are not
-counted in the budget and are not shown to the optimiser.
+Diagnostics (E2): at each n in `checkpoints` a cold fit of the current data is recorded
+(lengthscales, marginal likelihood) together with the Spearman rank correlation between
+the GP posterior mean and the true f on fresh points around the incumbent. With
+multistart=K, K further fits from random starting lengthscales are recorded to show how
+stable the lengthscales (and quantities derived from them) are. The extra evaluations of f
+are not counted in the budget and are not shown to the optimiser, and diagnostics never
+change the optimiser's path (they use their own fits and restore the torch random state).
 """
 
 import copy
@@ -80,6 +83,40 @@ def lengthscales(model, d):
     return np.full(d, ls[0]) if ls.size == 1 else ls
 
 
+def marginal_log_likelihood(model):
+    """Marginal log-likelihood of the model's training data at its current hyperparameters."""
+    model.train()
+    mll = ExactMarginalLogLikelihood(model.likelihood, model)
+    with torch.no_grad():
+        return float(mll(model(*model.train_inputs), model.train_targets))
+
+
+def multistart_fits(train_x, train_y, ard, nu, n_starts, rng):
+    """Fit the GP from several random starting lengthscales and return every result.
+
+    The marginal likelihood can be flat along a ridge (several lengthscale settings with
+    the same likelihood), so one fit may not tell us how stable a quantity such as the
+    relevance ratio is. Starting lengthscales are log-uniform in [0.1, 10] (unit-cube
+    units). Returns a list of {"mll": ..., "lengthscales": [...]}; failed fits are skipped.
+    """
+    d = train_x.shape[-1]
+    out = []
+    for _ in range(n_starts):
+        model = build_model(train_x, train_y, ard, nu)
+        base = model.covar_module.base_kernel
+        start = np.exp(rng.uniform(np.log(0.1), np.log(10.0), size=base.lengthscale.shape))
+        base.initialize(lengthscale=torch.tensor(start))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            try:
+                fit_gpytorch_mll(ExactMarginalLogLikelihood(model.likelihood, model))
+            except Exception:
+                continue
+        out.append({"mll": marginal_log_likelihood(model),
+                    "lengthscales": lengthscales(model, d).tolist()})
+    return out
+
+
 def rank_correlation(model, problem, x_inc, rng, m=200, radius=0.1):
     """Spearman correlation of the GP mean with the true f near the incumbent."""
     pts = np.clip(x_inc + radius * rng.standard_normal((m, x_inc.size)), 0.0, 1.0)
@@ -91,7 +128,11 @@ def rank_correlation(model, problem, x_inc, rng, m=200, radius=0.1):
 
 def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
         beta=4.0, refit_after=100, refit_every=5, warm_start=False, log_y=False,
-        raw_samples=512, num_restarts=10, checkpoints=(), **_):
+        raw_samples=512, num_restarts=10, checkpoints=(), multistart=0, **_):
+    if any(c >= budget for c in checkpoints):
+        # Diagnostics are taken before choosing the next point, so a checkpoint at or beyond
+        # the budget would be skipped silently.
+        raise ValueError("every checkpoint must be smaller than the budget")
     d = problem.dim
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -108,7 +149,8 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
     saved = None            # hyperparameters from the last refit
     last_fit_n = 0
     pending = sorted(checkpoints)
-    diag = {"checkpoint_n": [], "lengthscales": [], "rank_corr": []}
+    diag = {"checkpoint_n": [], "lengthscales": [], "mll": [], "rank_corr": [],
+            "multistart": []}
     while not tracker.done:
         train_x = torch.tensor(np.array(tracker.X))
         f = np.array(tracker.F)
@@ -118,7 +160,7 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
 
         at_checkpoint = bool(pending) and tracker.n >= pending[0]
         refit = (saved is None or tracker.n <= refit_after
-                 or tracker.n - last_fit_n >= refit_every or at_checkpoint)
+                 or tracker.n - last_fit_n >= refit_every)
         if refit:
             saved = fit(model, saved, warm_start)
             last_fit_n = tracker.n
@@ -126,11 +168,22 @@ def run(problem, budget, seed, acq="logei", ard=True, nu=2.5, n_init_factor=2.0,
             load(model, saved)
 
         if at_checkpoint:
+            # Diagnostics only observe: they use their own cold fit of the current data and
+            # restore the torch random state, so the optimiser's path is unchanged.
             pending.pop(0)
+            torch_state = torch.get_rng_state()
+            diag_model = model
+            if not refit or warm_start:
+                diag_model = build_model(train_x, train_y, ard, nu)
+                fit(diag_model, None)
             x_inc = tracker.X[int(np.argmin(f))]
             diag["checkpoint_n"].append(tracker.n)
-            diag["lengthscales"].append(lengthscales(model, d).tolist())
-            diag["rank_corr"].append(rank_correlation(model, problem, x_inc, rng))
+            diag["lengthscales"].append(lengthscales(diag_model, d).tolist())
+            diag["mll"].append(marginal_log_likelihood(diag_model))
+            diag["rank_corr"].append(rank_correlation(diag_model, problem, x_inc, rng))
+            diag["multistart"].append(
+                multistart_fits(train_x, train_y, ard, nu, multistart, rng))
+            torch.set_rng_state(torch_state)
 
         if acq == "logei":
             acqf = LogExpectedImprovement(model, best_f=train_y.max())

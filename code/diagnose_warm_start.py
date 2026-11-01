@@ -21,18 +21,11 @@ import torch
 from botorch.fit import fit_gpytorch_mll
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
-from methods.bo import build_model, fit, lengthscales
+from methods.bo import build_model, fit, lengthscales, marginal_log_likelihood
 from runner import RAW
 
 OUT = Path(__file__).resolve().parent.parent / "results" / "summary" / "a4_warm_start_diagnostic.csv"
 SEEDS, N_START, N_END = [1000, 1001, 1002, 1003], 12, 100
-
-
-def mll_value(model):
-    model.train()
-    mll = ExactMarginalLogLikelihood(model.likelihood, model)
-    with torch.no_grad():
-        return float(mll(model(*model.train_inputs), model.train_targets))
 
 
 def load_run(seed):
@@ -57,8 +50,8 @@ if __name__ == "__main__":
             fit_gpytorch_mll(ExactMarginalLogLikelihood(cold.likelihood, cold))
             warm = build_model(x, y, ard=True, nu=2.5)
             saved = fit(warm, saved, warm=True)           # chain of warm fits
-            rows.append({"seed": seed, "n": n, "mll_cold": mll_value(cold),
-                         "mll_warm": mll_value(warm),
+            rows.append({"seed": seed, "n": n, "mll_cold": marginal_log_likelihood(cold),
+                         "mll_warm": marginal_log_likelihood(warm),
                          "ls_min_cold": lengthscales(cold, d).min(),
                          "ls_max_cold": lengthscales(cold, d).max(),
                          "ls_min_warm": lengthscales(warm, d).min(),
