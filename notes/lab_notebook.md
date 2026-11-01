@@ -105,3 +105,4 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   evaluations about 74 min. Rough totals for BO-type methods: E2 about 220 CPU-hours before TuRBO, E1 about 120,
   sensitivity grids about 30, E3 and the follow-up less; of the order of 80 hours of wall-clock time on 7 workers,
   with an uncertainty of +-50% (TuRBO is not yet timed).
+- Anchor note: under cold-start fits one of the ten Branin seeds reached a gap of 1.8e-2 for BO (40 evaluations); the check passes on its pre-set criterion, a median gap below 0.01 (observed 2.0e-3).
