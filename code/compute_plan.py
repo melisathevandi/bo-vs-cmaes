@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-WORKERS, LOAD7, CONTINGENCY = 7, 1.10, 0.15
+WORKERS, LOAD7, CONTINGENCY = 7, 1.25, 0.15
 LOW, HIGH = 0.7, 1.6                 # judgement band around the central estimate
 HARD_STOP = datetime(2026, 11, 8, 23, 59)
 FOLLOW_UP_WALL_H = 20.0              # reserved follow-up experiment (given)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         "# Compute plan (planning estimate, not a result)\n\n"
         f"BO cost = timing-pilot integral x FACTOR ({fac:.2f}, measured/integral at d=10, N=500, 3 real runs, "
         f"folding in real-trajectory fit cost and the load of the ~6 busy processes during that run) x LOAD7 "
-        f"({LOAD7}, assumed for a 7-worker pool; to be checked against the A4 check at d=10). "
+        f"({LOAD7}, measured: A4 check at d=10 on 7 workers, 47.0 min per every-5 run vs 37.7 min in the calibration run). "
         f"TuRBO cost = measured pilot median x LOAD7. The A4-check row is the same in both tables.\n\n" + text,
         encoding="utf-8")
     print(text)

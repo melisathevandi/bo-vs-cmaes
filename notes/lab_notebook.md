@@ -123,3 +123,16 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - **A4 check at d=10, decision rule fixed before the runs** (`configs/a4_d10_check.toml`): adopt "cold refit every 10"
   only if, at n=500, the paired CI of (every 10 - every 5) contains 0 and its half-width is at most 0.35 decades;
   otherwise the main runs use every 5. 15 held-out seeds (1000-1014), rotated ellipsoid, d=10, kappa=1e4.
+
+## 2 Nov: A4 check at d=10 (outcome) and load factor
+
+- 30/30 runs finished (`results/summary/a4_d10_check.csv`). Paired difference in log10 gap (every 10 - every 5):
+  n=100: 0.000 (identical path, as expected); n=300: -0.010, CI [-0.132, 0.218]; n=500: -0.026, CI [-0.197, 0.200],
+  half-width 0.198.
+- **Rule applied as pre-set: CI contains 0 and half-width 0.198 <= 0.35, so the main runs use cold refits every 10
+  iterations (n > 100).** Documented as a schedule choice, backed by this paired check at d=5 (n<=300) and d=10 (n=500).
+- Measured wall time per run on 7 workers: 47.0 min (every 5), 29.1 min (every 10). The calibration run took 37.7 min
+  (~6 busy processes), so the real 7-worker load factor is about 1.25, not the assumed 1.10. `LOAD7` is set to 1.25 and
+  `notes/compute_plan.md` regenerated. With every 10 and LOAD7 = 1.25: core without E1 d=20 about 96 wall-h (111 with
+  contingency; range 78-177), with E1 d=20 about 112 (129; range 90-206); central estimate finishes E1 d=20 on 7 Nov,
+  before the 8 Nov hard stop. The high end (x1.6) would not fit; the cut order then applies.
