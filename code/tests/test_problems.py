@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from problems import ellipsoid, random_rotation, rosenbrock
+from problems import ellipsoid, low_effective_dim, random_rotation, rosenbrock
 
 
 @pytest.mark.parametrize("d", [2, 5, 10, 20])
@@ -63,6 +63,41 @@ def test_rosenbrock_zero_at_optimum(d):
     rng = np.random.default_rng(1)
     for u in rng.uniform(0, 1, size=(20, d)):
         assert f(u) >= 0.0
+
+
+@pytest.mark.parametrize("rotated", [False, True])
+def test_low_eff_dim_structure(rotated):
+    d, d_eff = 20, 2
+    f = low_effective_dim(d, d_eff, kappa=10.0, rotated=rotated, seed=4)
+    np.testing.assert_allclose(f.A @ f.A.T, np.eye(d_eff), atol=1e-10)   # orthonormal rows
+    assert np.trace(f.P) == pytest.approx(d_eff)                         # projector rank
+    assert f(f.u_star) == pytest.approx(0.0, abs=1e-12)
+    # f is constant along directions orthogonal to the relevant subspace
+    rng = np.random.default_rng(0)
+    u = rng.uniform(0.3, 0.7, d)
+    v = rng.standard_normal(d)
+    v -= f.P @ v
+    assert f(u + 0.05 * v / np.linalg.norm(v)) == pytest.approx(f(u), rel=1e-9)
+
+
+def test_low_eff_dim_aligned_axes_and_shared_optimum():
+    aligned = low_effective_dim(10, 2, rotated=False, seed=9)
+    rotated = low_effective_dim(10, 2, rotated=True, seed=9)
+    np.testing.assert_array_equal(aligned.u_star, rotated.u_star)
+    # aligned: each row of A is a coordinate axis
+    assert set(np.abs(aligned.A).sum(axis=1)) == {1.0}
+    assert np.count_nonzero(aligned.A) == 2
+
+
+def test_low_eff_dim_uniform_sample_scale_similar_aligned_vs_rotated():
+    """Rotation should not change how large f is on average, or the comparison is biased."""
+    ratios = []
+    for seed in range(20):
+        u = np.random.default_rng(100 + seed).uniform(0, 1, size=(300, 20))
+        fa = low_effective_dim(20, 2, rotated=False, seed=seed)
+        fr = low_effective_dim(20, 2, rotated=True, seed=seed)
+        ratios.append(np.median([fr(x) for x in u]) / np.median([fa(x) for x in u]))
+    assert 0.5 < np.median(ratios) < 2.0
 
 
 def test_ellipsoid_rejects_dim_one():

@@ -59,6 +59,39 @@ def ellipsoid(d, kappa=1.0, rotated=False, seed=0):
     return f
 
 
+def low_effective_dim(d, d_eff=2, kappa=1.0, rotated=False, seed=0):
+    """f(x) = sum_k w_k * (a_k . (x - x*))^2, with only d_eff relevant directions.
+
+    The rows a_k of A (d_eff x d) are orthonormal. Aligned: they are d_eff randomly
+    chosen coordinate axes. Rotated: the first d_eff rows of a random rotation. The
+    function is constant along the other d - d_eff directions, so the optimum is an
+    affine subspace that contains x* (inside the box in both cases). P = A^T A projects
+    onto the relevant subspace; the relevance diagnostic compares it to the GP's
+    lengthscales. Aligned and rotated instances with the same seed share x*.
+    """
+    if not 1 <= d_eff <= d:
+        raise ValueError("need 1 <= d_eff <= d")
+    rng = np.random.default_rng(seed)
+    u_star = _sample_optimum(d, rng)
+    if rotated:
+        a = random_rotation(d, rng)[:d_eff]
+    else:
+        a = np.eye(d)[rng.choice(d, size=d_eff, replace=False)]
+    weights = kappa ** (np.arange(d_eff) / max(d_eff - 1, 1))
+
+    def f(u):
+        z = a @ ((np.asarray(u, dtype=float) - u_star) * WIDTH)
+        return float(np.sum(weights * z * z))
+
+    f.u_star = u_star
+    f.f_star = 0.0
+    f.dim = d
+    f.A = a
+    f.P = a.T @ a
+    f.weights = weights
+    return f
+
+
 def rosenbrock(d, seed=0):
     """Shifted Rosenbrock function, with its minimum at the seeded optimum.
 
