@@ -37,3 +37,12 @@ module = "bo"
 [methods.cfg]
 warm_start = true
 refit_every = 10
+
+# Added after the first A4 result (warm start changed results on the rotated ellipsoid):
+# is a cold refit every 10 iterations equivalent to a cold refit every 5?
+[[methods]]
+name = "bo_cold_every10"
+module = "bo"
+[methods.cfg]
+warm_start = false
+refit_every = 10
