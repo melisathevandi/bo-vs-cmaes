@@ -17,6 +17,7 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   rotation invariance (and the effect of the box) is tested statistically in the E0 script,
   with paired differences over many seeds.
 - First BO timing: about 1 s per iteration at d=5, n<=60 (single thread). The A2 budgets
-  (1000 evaluations) may not be affordable; decided by the timing pilot (`results/summary/pilot_timing.csv`).
+  (1000 evaluations) are costly for BO in compute terms; budgets are fixed from the experiment requirements
+  and the measured cost in the timing pilot (`results/summary/pilot_timing.csv`).
 - Observed (n=40, aligned kappa=100, d=5): ARD lengthscales 13.4, 6.9, 4.0, 2.1, 1.0 follow the axis
   scales; GP rank correlation 0.97-1.0 (ARD) vs 0.6-0.95 (isotropic) at n=20-40.

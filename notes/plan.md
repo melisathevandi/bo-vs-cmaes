@@ -25,7 +25,7 @@
 > - Cap evaluations at 100·d², raising it only if runs are censored.
 > - Derive the expected α by hand from c_µ, λ and µ_eff before committing it. This replaces "may come out somewhat below 2".
 >
-> **A8. Additions in priority order, once the core plan is on track** (slip rule unchanged: cut c–e first):
+> **A8. Additions, in priority order, once the core experiments are done:**
 > - a. **Correctness anchor (required):** check the wrappers against a standard reference curve (e.g. COCO/BBOB sphere, or a library baseline) before E1–E3.
 > - b. 30 seeds on the primary H2 endpoint (A3).
 > - c. Compact noise experiment (E5): noisy ellipsoid; compare best-observed, GP posterior mean and CMA-ES mean as the recommendation; score by the true f.
@@ -38,7 +38,7 @@ The first review and plan (Oct 29) are saved in the repo at `notes/plan.md`, com
 **Status:**
 - **Done:** repo, uv + Python 3.12 environment, `code/problems.py` (ellipsoid with conditioning and rotation, shifted Rosenbrock), 20 passing unit tests.
 - **Not started:** method wrappers, runner, pilot, all experiments.
-- **Timing:** today is day 4 of 16. The deadline is 13 Nov 2026, 23:59.
+- **Budget principle (Nov 1):** evaluation budgets, seed counts and the set of methods are chosen from what each experiment needs to answer its question (for example, CMA-ES must run long enough to reach the regime being tested, and enough seeds for the paired CIs to be informative). They are not reduced to fit a schedule. Compute is the lever: the machine runs jobs continuously, and any cost limit that does remain is reported as BO's computational cost, with the measured numbers.
 
 ---
 
@@ -73,9 +73,9 @@ On "keep the rotated optimum inside the box": for the ellipsoid this is **alread
 - Rotated κ=1 is not run (it's the same function, as above).
 - E4 becomes one table, built from logs.
 
-**5. Put noise in the limitations. Agree.** It's named in the brief, so the limitations section will say explicitly that it wasn't studied and why: time, and the protocol for choosing a recommendation under noise.
+**5. Put noise in the limitations. Agree.** It's named in the brief, so the limitations section will say explicitly that the core design uses noiseless evaluations, and that choosing a recommendation under noise is a separate design question. A8c adds a compact noise experiment.
 
-**6. Timeline. Agree.** The next gate is the pilot and frozen configs, then E2 runs. One correction on ordering: E0 needs the same CMA-ES wrapper and takes minutes, so it runs during the pilot rather than as a separate step. The revised timeline is in section 4.
+**6. Order of work. Agree.** The next gate is the pilot and frozen configs, then E2 runs. One correction on ordering: E0 needs the same CMA-ES wrapper and is cheap, so it runs during the pilot rather than as a separate step. The order is in section 4.
 
 ---
 
@@ -98,7 +98,7 @@ On "keep the rotated optimum inside the box": for the ellipsoid this is **alread
 | BO: ARD, LogEI | ✓ | ✓ (monotone transform) | ✓ | ✓ | ✓ |
 | BO: isotropic, LogEI | | | | ✓ | |
 | BO: ARD, UCB | | | | | ✓ (cut 1st) |
-| TuRBO-1 | | | (if time) | ✓ | |
+| TuRBO-1 | | | (optional) | ✓ | |
 
 ### 2b. Experiment → figure or table (anything without one is dropped)
 **Every figure shows Sobol as a reference** (a line or marker), so we can see whether either method beats sampling with no model at all.
@@ -175,7 +175,7 @@ If it runs over, cut in this order: Table 2 → text, then shorter E0 text, then
 ---
 
 ## 3. Follow-up experiment slot (new)
-- **Reserved:** about 1.5 days (Nov 7–8), one overnight of compute, Fig 5 (a half-width panel next to Fig 4), and about 0.5 pages.
+- **Reserved:** one experiment, run after E1–E3, with Fig 5 (a half-width panel next to Fig 4) and about 0.5 pages.
 - **Process:**
   1. After E1–E3, list surprises in `notes/lab_notebook.md`.
   2. Pick the one whose explanation is most testable.
@@ -189,31 +189,27 @@ If it runs over, cut in this order: Table 2 → text, then shorter E0 text, then
 
 ---
 
-## 4. Revised timeline (today Nov 1 = day 4)
-| Date | Work | Gate |
-|---|---|---|
-| Nov 1 | Method wrappers (Sobol, CMA/sep/IPOP, BO ARD/iso LogEI/UCB, TuRBO-1); single-run runner with timing split; low-eff-dim function + tests | `pytest` passes; quick smoke run |
-| Nov 2 | Timing pilot (BO s/iteration at d=2/10/20); E0 invariance; sensitivity grid overnight | Budgets fixed |
-| Nov 3 | Apply decision rule; freeze configs; **commit `predictions.md`**; start **E2 overnight** | Predictions committed |
-| Nov 4 | E2 analysis + diagnostics; H5 learning-time runs (CMA only, d up to 80, 20 seeds); **E1 overnight** | Figs 1–2 drafts |
-| Nov 5 | E1 analysis + α fit; decoy-basin function + tests; **E3 run** | Fig 3 draft |
-| Nov 6 | E3 analysis; E4 table from logs; choose follow-up, commit its prediction | Fig 4, Table 2 |
-| Nov 7–8 | **Follow-up experiment** | Fig 5 |
-| Nov 9–12 | Final figures and `numbers.tex`; you write the report in Overleaf | Draft by Nov 11 |
-| Nov 13 | Clean-clone check; download Overleaf source into `report/`; submit (23:59) | Submitted |
+## 4. Order of work (gates, not dates)
+1. Method wrappers (Sobol, CMA/sep/IPOP, BO ARD/iso LogEI/UCB, TuRBO-1), job runner with the timing split, low-effective-dimension function. **Gate:** `pytest` passes and the smoke run works.
+2. Timing pilot (BO seconds per iteration at d = 2/10/20) and E0 invariance checks. **Gate:** budgets fixed from the experiment requirements and the measured cost.
+3. Sensitivity grids on held-out seeds; apply the decision rule and freeze the configs. **Gate:** correctness anchor (A8a) passes.
+4. **Commit `predictions.md`.** **Gate:** it is committed before any main run.
+5. E2 (primary endpoint first), then the H5 learning-time runs (CMA-ES only), then E1, then E3, each followed by its analysis and figure.
+6. E4 table from the logged timings; choose the follow-up from the notebook, commit its prediction, run it.
+7. Final figures and `numbers.tex`; the report is written in Overleaf; clean-clone check; Overleaf source copied into `report/`.
 
-**Slip rule:** if a gate is missed by more than half a day, apply the cut order: UCB → IPOP → TuRBO in E1 → d=20 in E1 → seeds down to 15. E2, the diagnostics, the sensitivity grid and the follow-up slot are never cut.
+**Priorities if a cost limit is ever hit:** the A8 additions are cut in the order c–e first, and the method-specific cuts are UCB, then IPOP, then TuRBO in E1. E2, the diagnostics, the sensitivity grid and the follow-up are never cut, and the seed count is not reduced below 20 (30 on the primary endpoint). Any such cut is reported together with the measured cost that caused it.
 
 ---
 
-## 5. Implementation for the next session (Nov 1–2)
+## 5. Implementation notes
 **Files to create:**
 - `code/methods/sobol.py`, `cmaes.py` (full/sep/IPOP via pycma), `bo.py` (SingleTaskGP, ARD or isotropic Matérn, LogEI/UCB), `turbo.py` (adapted from BoTorch's TuRBO-1 tutorial, with a citation)
   - Every method exposes the same interface: `run(problem, budget, seed, **cfg) → trajectory`. Each record holds x, f, the incumbent recommendation, and overhead time.
 - `code/runner.py`: one (config, method, seed) → one JSON file, recording package versions and the git commit.
 - `code/run_experiment.py`: process pool with `OMP_NUM_THREADS=1` and `torch.set_num_threads(1)`, a `__main__` guard (Windows spawn), resume by config hash, and `--quick`.
 - `code/problems.py`: add `low_effective_dim(d, d_eff, rotated, seed)`, reusing `random_rotation` and `_sample_optimum`.
-- `code/tests/test_invariance.py`: same seed → identical CMA-ES trajectory for f vs g∘f; rotated problem with rotated x₀ and no bounds → rotated trajectory.
+- `code/tests/test_invariance.py`: same seed → identical CMA-ES trajectory for f vs g∘f. (Rotation invariance holds only in distribution, so it is tested statistically in the E0 script; see the lab notebook, 2026-11-01.)
 - `configs/pilot.yaml`, `configs/sensitivity.yaml`.
 - Replace `notes/plan.md` with this revision.
 
