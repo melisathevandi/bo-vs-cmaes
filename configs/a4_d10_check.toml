@@ -1,0 +1,33 @@
+# A4 check at the E2 primary setting: is a cold GP refit every 10 iterations (after n = 100)
+# equivalent to one every 5? Rotated ellipsoid, d=10, kappa=1e4, 500 evaluations, 15 held-out
+# seeds (1000-1014), paired by seed, both settings with cold refits.
+#
+# Decision rule, fixed before the runs: adopt "refit every 10" for the main runs only if, at
+# n = 500, the 95% bootstrap CI of the paired median difference in log10 gap
+# (every 10 minus every 5) contains 0 AND its half-width is at most 0.35 decades.
+# Otherwise the main runs keep "refit every 5". Run on 7 workers, so its wall times also
+# check the assumed full-pool load factor in code/compute_plan.py.
+experiment = "a4_d10_check"
+budget = 500
+seeds = [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014]
+
+[[problems]]
+name = "ell_d10_k1e4_rotated"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = true
+
+[[methods]]
+name = "bo_cold_every5"
+module = "bo"
+[methods.cfg]
+warm_start = false
+refit_every = 5
+
+[[methods]]
+name = "bo_cold_every10"
+module = "bo"
+[methods.cfg]
+warm_start = false
+refit_every = 10

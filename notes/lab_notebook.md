@@ -106,3 +106,20 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   sensitivity grids about 30, E3 and the follow-up less; of the order of 80 hours of wall-clock time on 7 workers,
   with an uncertainty of +-50% (TuRBO is not yet timed).
 - Anchor note: under cold-start fits one of the ten Branin seeds reached a gap of 1.8e-2 for BO (40 evaluations); the check passes on its pre-set criterion, a median gap below 0.01 (observed 2.0e-3).
+
+## 2026-11-01 (compute plan approved with changes; A4 check at d=10 launched)
+- Timing pilots: BO d=10, N=500, cold refit every 5: 36.5, 37.0, 38.9 min (3 real runs, ~6 busy processes); TuRBO d=10:
+  13-17 min (N=500), 26-32 min (N=1000); d=20, N=1000: 53-55 min (`results/summary/pilot_run_timing.csv`).
+  The raw pilot-based BO estimator was too optimistic (21 min vs 37 measured; 3.6 vs 10.0 min for the A4 d=5 runs).
+- The calibration factor 2.28 = measured / pilot integral already contains the load of the ~6 processes that were
+  running; the old 1.3 multiplier cancelled out and is gone. An assumed 1.10 covers the 7th worker; it is checked
+  against the wall times of the A4 check below (7 workers).
+- Approved scope and order (plan changes): A4 check at d=10 first, then sensitivity grids, E2 primary, E2
+  low-effective-dimension, H5 runs (alongside), E1 d<=10, E3, E2 other kappa, the reserved follow-up (about 20 wall-h),
+  E1 d=20 last of the core, then extras (A8 c-e, E2 secondary) only if the core finishes early. Runs that are not
+  finished by 8 Nov are cut in the plan's cut order and reported as not run.
+- Compute estimate (`notes/compute_plan.md`, refit every 5): core without E1 d=20 about 109 wall-h (126 with a 15%
+  contingency; range 88-201); core with E1 d=20 about 133 wall-h (153; range 107-245).
+- **A4 check at d=10, decision rule fixed before the runs** (`configs/a4_d10_check.toml`): adopt "cold refit every 10"
+  only if, at n=500, the paired CI of (every 10 - every 5) contains 0 and its half-width is at most 0.35 decades;
+  otherwise the main runs use every 5. 15 held-out seeds (1000-1014), rotated ellipsoid, d=10, kappa=1e4.
