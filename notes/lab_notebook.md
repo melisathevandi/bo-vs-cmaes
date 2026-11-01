@@ -78,3 +78,30 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   The prediction now compares the fitted alpha with the rate-based value 1.87.
 - Decision: UCB stays in E3 (H3 makes a UCB-vs-LogEI prediction; E3 is at d <= 5 and cheap), so it is no longer
   on the cut list for E3.
+
+## 2026-11-01 (A4 refit-schedule check: warm start rejected, cold refit every 10 adopted)
+- Setup: BO (ARD, LogEI), budget 300, rotated ellipsoid (d=5, kappa=1e2) and Rosenbrock (d=5), held-out seeds
+  1000-1009, paired by seed, reference = cold-start refit every 5 iterations
+  (`configs/a4_refit_check.toml`, `results/summary/a4_refit_check.csv`).
+- **Warm-started refits changed results.** Rotated ellipsoid, median difference in log10 gap, warm minus cold
+  (positive = warm worse): n=100 +0.84 [0.49, 0.94]; n=300 +0.50 [0.24, 0.71] (refit every 5) and +0.46 [0.16, 0.69]
+  (refit every 10). Rosenbrock: CIs contain 0 at every budget. At n=100 the refit schedule is identical, so the
+  difference there comes from warm vs cold starting alone.
+- **Diagnostic** (`code/diagnose_warm_start.py`, replaying 4 cold-run trajectories, n = 12 to 100): the warm chain's
+  maximised marginal likelihood equals the cold fit's (median gap about 0, never below -0.5), but the fitted
+  lengthscales differ at equal likelihood (e.g. seed 1003, n=100: cold [1.7, 4.3], warm [3.2, 7.9]). So the
+  likelihood is flat along a ridge, and where a fit lands on it changes BO's behaviour. The direction of the effect on
+  lengthscales is not consistent across the 4 seeds, and this replay uses the cold run's data, so it does not
+  establish the cause of the end-to-end difference. Not pursued further for now.
+- **Decision:** warm start is off (`warm_start=False`, now the default). Main runs use cold-start fits.
+- **Cold refit every 10 vs cold every 5** (same A4 data): median differences at n=200 and n=300 are 0.00 to +0.03 with
+  CIs containing 0 on both problems (widths about +-0.3 decades), and wall time is 25% (ellipsoid) and 10% (Rosenbrock)
+  lower at n=300. **Decision:** main runs use cold fits and `refit_every = 10` once n > 100 (set explicitly in each
+  config). Limits: tested at d=5 and n <= 300 with 10 seeds, so it is not evidence for d=10-20 at n=1000.
+- Correctness anchor re-run under the cold default: BO (Branin, 40 evaluations) median gap 2.0e-3, worst seed
+  1.8e-2 (above 0.01; the check is defined on the median); TuRBO median 1.2e-3.
+- Compute estimate (planning only, from the timing pilot, cold fits, refit every 10, x1.3 for parallel load; not report
+  numbers): BO run of d=10 with 500 evaluations about 15 min; d=10 with 1000 evaluations about 58 min; d=20 with 1000
+  evaluations about 74 min. Rough totals for BO-type methods: E2 about 220 CPU-hours before TuRBO, E1 about 120,
+  sensitivity grids about 30, E3 and the follow-up less; of the order of 80 hours of wall-clock time on 7 workers,
+  with an uncertainty of +-50% (TuRBO is not yet timed).
