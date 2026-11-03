@@ -1,0 +1,64 @@
+# E2 primary: rotation and axis alignment on the ill-conditioned ellipsoid, d=10, kappa=1e4,
+# 500 evaluations, 30 seeds (0-29). Problems: aligned, rotated (same instance seeds, same optimum)
+# and an independent aligned replicate (instance_seed_offset 5000) that gives the noise floor of the
+# rotation penalty (amendment A1). BO uses cold GP refits every 10 iterations after n = 100 (A4).
+experiment = "e2_primary"
+budget = 500
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+
+[[problems]]
+name = "ell_d10_k1e4_aligned"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = false
+
+[[problems]]
+name = "ell_d10_k1e4_rotated"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = true
+
+[[problems]]
+name = "ell_d10_k1e4_aligned_rep"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = false
+instance_seed_offset = 5000
+
+[[methods]]
+name = "bo_ard"
+module = "bo"
+[methods.cfg]
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_iso"
+module = "bo"
+[methods.cfg]
+ard = false
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "turbo"
+module = "turbo"
+[methods.cfg]
+refit_every = 10
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "sep_cma"
+module = "cmaes"
+[methods.cfg]
+diagonal = true
+
+[[methods]]
+name = "sobol"
+module = "sobol"

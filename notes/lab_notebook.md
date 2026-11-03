@@ -136,3 +136,24 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   `notes/compute_plan.md` regenerated. With every 10 and LOAD7 = 1.25: core without E1 d=20 about 96 wall-h (111 with
   contingency; range 78-177), with E1 d=20 about 112 (129; range 90-206); central estimate finishes E1 d=20 on 7 Nov,
   before the 8 Nov hard stop. The high end (x1.6) would not fit; the cut order then applies.
+
+## 4 Nov: lean core adopted, grids launched, chain running
+
+- Scope change (instruction of 4 Nov): the core is now the sensitivity grids, E2 primary, E2 low-effective-dimension, H5,
+  E1 for d <= 10 and the reserved follow-up. E3, E2 other kappa, E1 d=20 and A8 c-e are optional and run only if the core is
+  ahead of schedule on 6 Nov. Hard stop for runs: 8 Nov. The 4 local commits were pushed to origin/main.
+- Sensitivity grids launched 4 Nov 00:52 (CMA-ES grid: 120 runs in 18 s; BO grid: 120 runs, 7 workers). Chain
+  `code/run_core.sh` waits for the BO grid, applies the decision rule (`code/analyze_sensitivity.py`), commits the frozen
+  configs, then runs E2 primary -> E2 low-effective-dimension -> H5 -> E1 d = 2, 3, 5, 8, 10, retrying a failed step up
+  to 3 times. Step times go to `logs/chain_times.csv`; stop markers `logs/CHAIN_STOPPED` / `logs/CHAIN_DONE`.
+- CMA-ES grid result (rule applied by hand before the BO grid finished): sigma0 = 0.15 beats the default on the
+  rotated ellipsoid (median -0.74 decades, CI [-1.04, -0.16]) but not on Rosenbrock (-0.04, CI [-0.12, 0.19]), so the
+  default is kept under the rule (needs both problems).
+- Slip: my first chain script waited for 60 BO result files, but the grid has 120 jobs; I stopped it while it was still in
+  its wait loop (nothing ran twice) and relaunched with 120. The compute-plan row for the grid had the same count mix-up
+  (60 vs 120 runs) and was corrected: 6.3 wall-h, not 3.1.
+- Choices made for configs the plan left open (to be stated in the report): E1 ellipsoid is rotated with kappa = 1e2;
+  low-effective-dimension function uses d = 20, d_eff = 2, equal weights (kappa = 1); E2 primary also runs CMA-ES,
+  sep-CMA-ES and Sobol (negligible cost); BO and TuRBO refit cold every 10 iterations after n = 100.
+- Expected finish times per row are in `notes/compute_plan.md` (lean core about 78 wall-h with contingency: follow-up
+  ends about 7 Nov 07:00, i.e. after the 6 Nov gate for the optional rows).

@@ -1,0 +1,32 @@
+# E1 d=8: BO (ARD, LogEI) vs CMA-ES vs Sobol, 640 evaluations, 20 seeds (0-19), on the
+# rotated ellipsoid (kappa=1e2) and the shifted Rosenbrock function.
+experiment = "e1_d8"
+budget = 640
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+[[problems]]
+name = "ell_k100_rotated"
+family = "ellipsoid"
+d = 8
+kappa = 100.0
+rotated = true
+
+[[problems]]
+name = "rosenbrock"
+family = "rosenbrock"
+d = 8
+
+[[methods]]
+name = "bo_ard"
+module = "bo"
+[methods.cfg]
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "sobol"
+module = "sobol"

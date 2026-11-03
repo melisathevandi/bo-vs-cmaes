@@ -1,0 +1,77 @@
+# Sensitivity grid for BO (ARD, LogEI): n_init in {d, 2d, 4d} x Matern nu in {1.5, 2.5}. Default = n2d_nu2.5.
+# Cold refits every 10 iterations after n = 100 (A4 outcome).
+# Held-out seeds 1000-1009 (the main runs use 0-29), two pilot problems, 10 seeds per configuration.
+# Decision rule (fixed in notes/plan.md, A6/section 1.3): keep the default unless another
+# configuration is better on BOTH pilot problems and its paired bootstrap CI (vs the default)
+# excludes 0; then adopt it and report it. Analysis: code/analyze_sensitivity.py.
+experiment = "sens_bo"
+budget = 500
+seeds = [1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009]
+
+[[problems]]
+name = "ell_d10_k100_rotated"
+family = "ellipsoid"
+d = 10
+kappa = 100.0
+rotated = true
+budget = 500
+
+[[problems]]
+name = "rosenbrock_d5"
+family = "rosenbrock"
+d = 5
+budget = 400
+
+[[methods]]
+name = "bo_n1d_nu1.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 1.0
+nu = 1.5
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_n1d_nu2.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 1.0
+nu = 2.5
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_n2d_nu1.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 2.0
+nu = 1.5
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_n2d_nu2.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 2.0
+nu = 2.5
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_n4d_nu1.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 4.0
+nu = 1.5
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "bo_n4d_nu2.5"
+module = "bo"
+[methods.cfg]
+n_init_factor = 4.0
+nu = 2.5
+refit_every = 10
+warm_start = false

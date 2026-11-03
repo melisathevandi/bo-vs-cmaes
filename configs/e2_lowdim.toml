@@ -1,0 +1,54 @@
+# E2 low-effective dimension: d=20 with d_eff=2 relevant directions (equal weights, kappa=1),
+# aligned vs rotated, 500 evaluations, 20 seeds. ARD-BO records the relevance ratio rho at
+# checkpoints with a 5-start stability check; isotropic BO records the GP rank correlation only.
+experiment = "e2_lowdim"
+budget = 500
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+[[problems]]
+name = "lowdim_d20_deff2_aligned"
+family = "low_effective_dim"
+d = 20
+d_eff = 2
+kappa = 1.0
+rotated = false
+
+[[problems]]
+name = "lowdim_d20_deff2_rotated"
+family = "low_effective_dim"
+d = 20
+d_eff = 2
+kappa = 1.0
+rotated = true
+
+[[methods]]
+name = "bo_ard"
+module = "bo"
+[methods.cfg]
+refit_every = 10
+warm_start = false
+checkpoints = [25, 50, 100, 150, 200]
+multistart = 5
+
+[[methods]]
+name = "bo_iso"
+module = "bo"
+[methods.cfg]
+ard = false
+refit_every = 10
+warm_start = false
+checkpoints = [25, 50, 100, 150, 200]
+
+[[methods]]
+name = "turbo"
+module = "turbo"
+[methods.cfg]
+refit_every = 10
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "sobol"
+module = "sobol"
