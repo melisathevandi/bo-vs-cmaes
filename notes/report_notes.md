@@ -123,8 +123,12 @@ data, so no number below comes from it yet.
 - **Run.** d = 10, kappa = 1e4, 500 evaluations, 30 seeds; aligned, rotated and an independent aligned replicate (noise
   floor, instance seed offset 5000); ARD-BO, iso-BO, TuRBO, CMA-ES, sep-CMA-ES, Sobol (`configs/e2_primary.toml`).
 - **Results.** Not yet available.
-- **Pre-registered checks.** Aligned-replicate Delta has CI containing 0 for every method; if not, stop and investigate
-  before reading anything else.
+- **Declared secondary variant.** CMA-ES with sigma0 = 0.15, run on the same instances and seeds in a separate experiment
+  (`configs/e2_cma_sigma015.toml`, results in `results/raw/e2_cma_sigma015/`). It is reported as secondary and never
+  replaces the default CMA-ES or enters the interactions of the main analysis.
+- **Pre-registered analysis.** `analysis_addendum_e2.md` (written before any E2 primary result was read) fixes the
+  noise-floor check (99% CIs for the six methods and a tolerance in decades), the primary statistics and the secondary
+  variant. The script is `code/analyze_e2.py`.
 
 ### E2 low-effective dimension (not yet run)
 - d = 20, d_eff = 2, aligned vs rotated, 500 evaluations, 20 seeds; rho and rank correlation at checkpoints
@@ -159,7 +163,7 @@ data, so no number below comes from it yet.
 | Hypothesis | Prediction (frozen in `predictions.md`, ac4c90f) | Status |
 |---|---|---|
 | H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | pending (E1) |
-| H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | partial: CMA-ES box effect confirmed in E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`); the rest pending (E2) |
+| H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | CMA-ES part consistent with E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`). The prediction was informed by E0, so this is not an independent test. E2 runs bounded only, so the unbounded part rests on E0 alone. The rest is pending (E2) |
 | H3 | P(success) falls with basin width; IPOP beats default CMA-ES at larger budgets; UCB beats LogEI on the narrowest basin | not run (E3 optional) |
 | H4 | c* increases with budget and with d | pending (E1 logs) |
 | H5 | CI of alpha-hat (d >= 10) contains 1.87; alpha-hat (all d) about 1.7 | expected values computed (1.87, 1.71; `h5_expected_alpha.csv`); measurement pending |
@@ -174,14 +178,6 @@ data, so no number below comes from it yet.
   on the rotated ellipsoid (+0.84 at n = 100). Cold refits are the default. 2026-11-01 (A4 entry).
 - **E0 box effect:** rotation costs bounded CMA-ES about 0.4-0.5 decades while unbounded CMA-ES is rotation-insensitive
   (section 3, E0).
-- **Estimator underestimated BO cost:** the first compute estimate was 1.4-2.8 times too low (e.g. 21 min predicted vs 37
-  measured at d = 10, 500 evaluations); calibrated against real runs. 2026-11-01 (compute plan); 2 Nov (load factor 1.25
-  measured at 7 workers vs 1.10 assumed).
-- **6.4-hour launch slip (4 Nov):** the experiment chain was launched with `setsid`, which does not exist in this shell, so
-  it never started; the BO grid finished at 04:28 and the workers sat idle until 10:50. Relaunched with `nohup`. Cost: about
-  6.4 h on every later finish time. 4 Nov (lab notebook).
-- **Wrong job count in my own script:** the first chain waited for 60 BO result files, but the grid has 120 jobs; caught
-  before it started a duplicate run. 4 Nov.
 
 ## 6. Limitations (so far)
 - Noise is not studied unless the optional A8c runs; the report states this as a limitation.

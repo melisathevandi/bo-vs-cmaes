@@ -164,3 +164,10 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   beats the default on both problems; CMA-ES: sigma0 = 0.15 wins on the rotated ellipsoid only). Frozen configs committed
   (eca7c30). E2 primary started 4 Nov about 10:52, so all expected finish times in `notes/compute_plan.md` move later by
   about 6.4 h.
+
+## 4 Nov: E2 primary analysis fixed in advance (commit e7a117d)
+- `analysis_addendum_e2.md` replaces the "stop if the aligned-replicate CI excludes 0" rule with 99% CIs for the
+  six-method noise-floor check and a tolerance of 0.15 decades (a flag does not stop the analysis; it is reported and
+  investigated). Written when 7 of 540 E2 primary jobs had finished and none had been opened.
+- Declared secondary variant: CMA-ES with sigma0 = 0.15 on the E2 primary instances and seeds, in its own experiment
+  (`configs/e2_cma_sigma015.toml`, 90 CMA-ES jobs, seconds). It does not touch the BO runs or the main results.
