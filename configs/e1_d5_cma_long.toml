@@ -1,0 +1,22 @@
+# Supplementary CMA-ES-only long runs on the E1 d=5 problems (analysis_addendum_e1_cma_long.md).
+# Same problems and seeds as configs/e1_d5.toml, default CMA-ES settings, budget raised so that the run can
+# converge (pycma terminates it); the full trajectory is recorded. Does not replace the CMA-ES runs of e1_d5.
+experiment = "e1_d5_cma_long"
+budget = 50000
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+[[problems]]
+name = "ell_k100_rotated"
+family = "ellipsoid"
+d = 5
+kappa = 100.0
+rotated = true
+
+[[problems]]
+name = "rosenbrock"
+family = "rosenbrock"
+d = 5
+
+[[methods]]
+name = "cma"
+module = "cmaes"
