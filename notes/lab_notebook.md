@@ -199,3 +199,11 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   floor, so no run is censored by the 10,000 budget. The reach analysis of the addendum has not been run yet.
 - E1 configs: each E1 config has a single `budget` shared by every method (e1_d2/3: 200, d5: 400, d8: 640, d10: 1000), so
   CMA-ES in E1 stops at the BO budget. Queued configs not changed.
+
+## 5 Nov: chain stopped at E2 low-effective dimension (out of memory)
+- `logs/CHAIN_STOPPED`: `e2_lowdim failed 3 times` (about 02:00). 38 of 200 jobs finished (20 aligned ARD-BO, 18 aligned
+  iso-BO); no TuRBO job has finished. All three attempts end in `RuntimeError: DefaultCPUAllocator: not enough memory`
+  (256 MB, 256 MB, then 33 MB) raised in `code/methods/turbo.py:85` (`model.posterior(candidates).rsample()`, d = 20, 4,000
+  Sobol candidates, so a 4,000 x 4,000 covariance whose eigendecomposition fallback is used after the Cholesky warnings).
+  With 7 TuRBO workers at once this exhausts memory; the machine has 15.4 GB RAM and 6.0 of 31.0 GB commit free right
+  after the stop. H5 and E1 have not started. No code or config was changed.
