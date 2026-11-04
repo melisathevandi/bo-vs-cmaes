@@ -207,3 +207,13 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   Sobol candidates, so a 4,000 x 4,000 covariance whose eigendecomposition fallback is used after the Cholesky warnings).
   With 7 TuRBO workers at once this exhausts memory; the machine has 15.4 GB RAM and 6.0 of 31.0 GB commit free right
   after the stop. H5 and E1 have not started. No code or config was changed.
+
+## 5 Nov: E2 low-effective dimension resumed with 4 workers
+- Decision (user): resume the remaining 162 jobs with 4 workers through `code/run_experiment.py`, not `run_core.sh`; no
+  change to `turbo.py`, `runner.py`, `run_core.sh` or any config. Restarted about 02:35 (`logs/e2_lowdim_restart_epoch`).
+  The chain driver is stopped, so H5 and E1 are started by hand after the user decides the E1 worker count.
+- `code/run_experiment.py` now adds `"workers"` to each newly written result JSON (commit 7e62b17; not in the spec, so
+  job hashes are unchanged). Jobs written before this have no such field: 7 workers for E2 primary, the 38 earlier
+  e2_lowdim jobs and the sensitivity grids (log header `N jobs, 7 workers`). The 60 `e2_cma_long` jobs used 1 worker.
+- Estimate for the remaining e2_lowdim: about 35.5 CPU-h, 7 to 9 wall-h at 4 workers (about 10 h with contingency).
+  TuRBO at d = 20 has no measured run time yet (33.6 min per run planned).
