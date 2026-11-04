@@ -43,7 +43,7 @@ data, so no number below comes from it yet.
     in [0, 1]; an isotropic kernel gives exactly d_eff/d. Stability: rho of the main fit and of 5 multi-start fits at each
     checkpoint, spread over all fits and over fits within 1 nat of the best likelihood (`code/diagnostics.py`).
   - **GP rank correlation.** At a checkpoint n, Spearman correlation between the GP posterior mean and the true f on 200
-    fresh points from N(x_inc, 0.1^2 I) clipped to the box (x_inc = current best). Checkpoints n in {25, 50, 100, 150, 200}.
+    fresh points from N(x_inc, 0.1^2 I) clipped to the box (x_inc = current best). Configured checkpoints are {25, 50, 100, 150, 200}; because the initial design already has 40 points, the first one is taken at n = 40, so the recorded checkpoints are n = 40, 50, 100, 150, 200 (`results/raw/e2_lowdim`, all 25 files finished by 5 Nov 01:30). Per ARD-BO checkpoint the record stores the lengthscales and marginal likelihood of a cold fit, the rank correlation and 5 multi-start fits (each with its lengthscales and marginal likelihood); iso-BO stores only the rank correlation. For the low-effective-dimension ARD-BO runs `t_method` and `wall_s` include the diagnostics time (cold fit, multi-start fits, rank correlation), so their cost is overstated relative to iso-BO.
   - **kappa_t (CMA-ES learning).** After each generation, kappa_t = cond(C_t^(1/2) H C_t^(1/2)) = eigenvalue ratio of
     C_t H, H the ellipsoid's Hessian. It starts at kappa and equals 1 when C is proportional to H^-1. Learning time T =
     evaluations when kappa_t first drops below tau = 10 (tau = 3 and 100 for robustness); unbounded, termination switched

@@ -36,7 +36,8 @@ WORKERS, LOAD7, CONTINGENCY = 7, 1.25, 0.15
 LOW, HIGH = 0.7, 1.6                 # judgement band around the central estimate
 HARD_STOP = datetime(2026, 11, 8, 23, 59)
 EVERY = 10                           # BO refit interval after n = 100 (A4 outcome)
-START = datetime(2026, 11, 4, 0, 52)  # launch of the sensitivity grids
+START = datetime(2026, 11, 5, 0, 58)  # end of the last finished row (E2 primary, logs/chain_times.csv)
+DONE = {"sens_bo", "e2_primary"}      # finished rows: no longer planned (actuals are in the lab notebook)
 GATE = datetime(2026, 11, 6, 23, 59)  # optional experiments only if the core is ahead here
 FOLLOW_UP_WALL_H = 20.0              # reserved follow-up experiment (given)
 
@@ -136,6 +137,9 @@ def table():
              "|---|---|---|---|---|---|---|"]
     cum, totals = 0.0, {}
     for key, name, note, group, parts, fixed in phases():
+        if key in DONE:
+            lines.append(f"| {key} | {name}: {note} | {sum(n for n, _ in parts)} | - | - | done | {group} |")
+            continue
         c = cpu_h(parts, fixed)
         totals[group] = totals.get(group, 0.0) + c / WORKERS
         cum += c / WORKERS * (1 + CONTINGENCY)
@@ -148,12 +152,12 @@ def table():
         runs = sum(n for n, _ in parts)
         lines.append(f"| {key} | {name}: {note} | {runs or '-'} | {c:.1f} | {c / WORKERS:.1f} | "
                      f"{t:%d %b %H:%M}{flag} | {group} |")
-    core = totals["core"]
-    lines += ["", f"- Lean core: **{core:.0f} wall-h** ({core * (1 + CONTINGENCY):.0f} with 15% contingency; "
+    core = sum(cpu_h(parts, fixed) for key, _, _, g, parts, fixed in phases() if g == "core" and key not in DONE) / WORKERS
+    lines += ["", f"- Remaining lean core: **{core:.0f} wall-h** ({core * (1 + CONTINGENCY):.0f} with 15% contingency; "
               f"range {LOW * core * (1 + CONTINGENCY):.0f} to {HIGH * core * (1 + CONTINGENCY):.0f})",
               f"- Optional (E3, E2 other kappa, E1 d=20): {totals['optional']:.0f} wall-h",
               f"- Extras (E2 secondary, A8 c-e): {totals['extra']:.0f} wall-h",
-              f"- Expected finish times are cumulative from the grid launch ({START:%d %b %H:%M}) with 15% contingency, in "
+              f"- Expected finish times are cumulative from {START:%d %b %H:%M} (end of E2 primary) over the remaining rows, with 15% contingency, in "
               f"this order; hard stop {HARD_STOP:%d %b %H:%M}."]
     return "\n".join(lines)
 

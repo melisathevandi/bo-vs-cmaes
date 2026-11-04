@@ -180,3 +180,13 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   interactions positive with CIs excluding 0. Results in `results/summary/e2_primary.csv`.
 - The BO runs emit many linear_operator NumericalWarnings (Cholesky not positive definite at jitter 1e-3, fallback to
   symeig; 4,097 lines in `logs/e2_primary.log`). All runs completed; effect on results not examined.
+
+## 5 Nov: E2 audit and plan regeneration
+- Audit of E2 primary (540/540, 18 cells x 30, no duplicates, `code_dirty` false throughout; 533 jobs at a00172f, 7 at
+  f53f5f6, no method code differs between them) and of the secondary (90/90). No timing outlier beyond 1.5x the cell median.
+- Low-effective-dimension checkpoints: configured at 25, 50, 100, 150, 200, recorded at 40, 50, 100, 150, 200 because the
+  first checkpoint fires at the first iteration with n >= 25 and the initial design has 40 points. Unchanged for all runs.
+- `t_method` is elapsed time minus time inside the objective, so for the ARD-BO low-effective-dimension runs it includes the
+  diagnostics time. The fit/acquisition split, CPU time and per-run timestamps are not stored.
+- `notes/compute_plan.md` regenerated: finished rows marked done, finish dates recomputed from the end of E2 primary
+  (5 Nov 00:58) with the original per-run estimates; the estimates for the remaining BO rows were not rescaled.
