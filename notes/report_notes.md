@@ -128,6 +128,17 @@ data, so no number below comes from it yet.
   CMA-ES 0.16 [0.00, 0.41]; sep-CMA-ES 0.87 [0.72, 1.07]; Sobol -0.01 [-0.17, 0.10]. Interactions: ARD minus iso 0.89
   [0.54, 1.20]; sep-CMA minus CMA 0.77 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15: Delta_rot 0.32
   [-0.06, 0.61], interaction with sep-CMA 0.62 [0.45, 0.83].
+- **Descriptive table (not pre-registered).** Median log10 gap at n = 500 with the IQR over 30 seeds, from
+  `results/summary/e2_primary_descriptive.csv` (`code/descriptive_e2.py`; no test, adds nothing to the analysis above):
+
+  | Method | Aligned median [Q1, Q3] | Rotated median [Q1, Q3] |
+  |---|---|---|
+  | ARD-BO | 0.95 [0.79, 1.11] | 1.75 [1.52, 2.05] |
+  | iso-BO | 1.60 [1.46, 1.76] | 1.60 [1.46, 1.72] |
+  | TuRBO | 0.87 [0.65, 0.99] | 2.29 [2.07, 2.48] |
+  | CMA-ES | 2.73 [2.58, 2.93] | 2.97 [2.78, 3.24] |
+  | sep-CMA-ES | 2.08 [1.91, 2.25] | 3.04 [2.84, 3.24] |
+  | Sobol | 3.76 [3.62, 3.94] | 3.72 [3.63, 3.80] |
 - **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
   Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
   ones little or nothing. Unbounded behaviour is not tested here (E0 only).
@@ -154,6 +165,17 @@ data, so no number below comes from it yet.
   CMA-ES 0.16 [0.00, 0.41]; sep-CMA-ES 0.87 [0.72, 1.07]; Sobol -0.01 [-0.17, 0.10]. Interactions: ARD minus iso 0.89
   [0.54, 1.20]; sep-CMA minus CMA 0.77 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15: Delta_rot 0.32
   [-0.06, 0.61], interaction with sep-CMA 0.62 [0.45, 0.83].
+- **Descriptive table (not pre-registered).** Median log10 gap at n = 500 with the IQR over 30 seeds, from
+  `results/summary/e2_primary_descriptive.csv` (`code/descriptive_e2.py`; no test, adds nothing to the analysis above):
+
+  | Method | Aligned median [Q1, Q3] | Rotated median [Q1, Q3] |
+  |---|---|---|
+  | ARD-BO | 0.95 [0.79, 1.11] | 1.75 [1.52, 2.05] |
+  | iso-BO | 1.60 [1.46, 1.76] | 1.60 [1.46, 1.72] |
+  | TuRBO | 0.87 [0.65, 0.99] | 2.29 [2.07, 2.48] |
+  | CMA-ES | 2.73 [2.58, 2.93] | 2.97 [2.78, 3.24] |
+  | sep-CMA-ES | 2.08 [1.91, 2.25] | 3.04 [2.84, 3.24] |
+  | Sobol | 3.76 [3.62, 3.94] | 3.72 [3.63, 3.80] |
 - **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
   Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
   ones little or nothing. Unbounded behaviour is not tested here (E0 only).

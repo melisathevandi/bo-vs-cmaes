@@ -46,50 +46,51 @@ def ci_str(med, lo, hi):
 
 
 def fig1_e2_primary():
-    """E2 primary: final gap by problem and method, and the rotation penalty with its noise floor."""
+    """E2 primary (d=10, kappa=1e4 only): median final gap and rotation penalty, Sobol as reference."""
     if not have("e2_primary"):
         SKIPPED.append("fig1 (e2_primary not run)")
         return
     df = load_results("e2_primary")
     n = int(df["budget"].max())
     t = gap_table(df, n)
-    methods = [m for m in COLORS if m in t.columns]
+    methods = [m for m in COLORS if m in t.columns and m != "sobol"]
     probs = {"aligned": "ell_d10_k1e4_aligned", "rotated": "ell_d10_k1e4_rotated",
              "replicate": "ell_d10_k1e4_aligned_rep"}
     fig, ax = plt.subplots(1, 2, figsize=(7.5, 3.0))
-    width = 0.8 / len(methods)
-    for j, m in enumerate(methods):
-        for i, (lab, p) in enumerate(probs.items()):
-            x = t.loc[p][m].dropna().to_numpy()
+    for i, (lab, mark) in enumerate((("aligned", "o"), ("rotated", "s"))):
+        for j, m in enumerate(methods):
+            x = t.loc[probs[lab]][m].dropna().to_numpy()
             q1, med, q3 = np.quantile(x, [0.25, 0.5, 0.75])
-            ax[0].bar(i + (j - len(methods) / 2 + 0.5) * width, med, width * 0.9, color=COLORS[m],
-                      alpha=[1, 0.55, 0.3][i], label=LABELS[m] if i == 0 else None)
-            ax[0].plot([i + (j - len(methods) / 2 + 0.5) * width] * 2, [q1, q3], "k-", lw=0.8)
+            xp = j + (i - 0.5) * 0.3
+            ax[0].plot([xp, xp], [q1, q3], "-", color=COLORS[m], lw=1.2)
+            ax[0].plot(xp, med, mark, color=COLORS[m], mfc=COLORS[m] if i == 0 else "white", ms=5)
             number(f"gapmed{m.replace('_', '')}{lab}", med)
-    ax[0].set_xticks(range(3), ["aligned", "rotated", "aligned\nreplicate"])
-    ax[0].set_ylabel(f"median log$_{{10}}$ gap at n={n}")
-    ax[0].legend(fontsize=6, ncol=2)
-    ax[0].set_title("(a) final gap (IQR bars; lighter = later column)", fontsize=8)
+    for lab, ls in (("aligned", "--"), ("rotated", ":")):
+        sob = np.median(t.loc[probs[lab]]["sobol"].dropna())
+        ax[0].axhline(sob, color=COLORS["sobol"], ls=ls, lw=1, label=f"Sobol {lab}")
+        number(f"gapmedsobol{lab}", sob)
+    ax[0].set_xticks(range(len(methods)), [LABELS[m] for m in methods], rotation=30, fontsize=7)
+    ax[0].set_ylabel(f"median log$_{{10}}$ gap at n={n} (IQR)")
+    ax[0].legend(fontsize=6)
+    ax[0].set_title("(a) final gap: filled = aligned, open = rotated", fontsize=8)
 
-    def rot_penalty(m, other):
-        d = (t.loc[probs[other]][m] - t.loc[probs["aligned"]][m]).dropna().to_numpy()
-        return bootstrap_ci(d)
-
-    for j, m in enumerate(methods):
+    allm = methods + ["sobol"]
+    for j, m in enumerate(allm):
         for k, other in enumerate(("rotated", "replicate")):
-            med, lo, hi = rot_penalty(m, other)
-            ax[1].errorbar(j + (k - 0.5) * 0.25, med, yerr=[[med - lo], [hi - med]], fmt="o" if k == 0 else "s",
-                           color=COLORS[m], mfc=COLORS[m] if k == 0 else "white", capsize=2, ms=4)
+            d = (t.loc[probs[other]][m] - t.loc[probs["aligned"]][m]).dropna().to_numpy()
+            med, lo, hi = bootstrap_ci(d)
+            ax[1].errorbar(j + (k - 0.5) * 0.25, med, yerr=[[med - lo], [hi - med]],
+                           fmt="o" if k == 0 else "s", color=COLORS[m],
+                           mfc=COLORS[m] if k == 0 else "white", capsize=2, ms=4)
             number(f"drot{m.replace('_', '')}{other}", ci_str(med, lo, hi), "{}")
     ax[1].axhline(0, color="k", lw=0.6)
-    ax[1].set_xticks(range(len(methods)), [LABELS[m] for m in methods], rotation=30, fontsize=7)
-    ax[1].set_ylabel("$\\Delta$ vs aligned (log$_{10}$ gap)")
-    ax[1].set_title("(b) circle: rotated; square: independent aligned replicate (noise floor)", fontsize=8)
-    for name, (a, b) in {"interactionBO": ("bo_ard", "bo_iso"), "interactionCMA": ("sep_cma", "cma")}.items():
-        if a in t.columns and b in t.columns:
-            d = ((t.loc[probs["rotated"]][a] - t.loc[probs["aligned"]][a])
-                 - (t.loc[probs["rotated"]][b] - t.loc[probs["aligned"]][b])).dropna().to_numpy()
-            number(name, ci_str(*bootstrap_ci(d)), "{}")
+    ax[1].set_xticks(range(len(allm)), [LABELS[m] for m in allm], rotation=30, fontsize=7)
+    ax[1].set_ylabel(r"$\Delta$ vs aligned (log$_{10}$ gap)")
+    ax[1].set_title("(b) circle: rotated; square: aligned replicate (noise floor)", fontsize=8)
+    for name, (a_, b_) in {"interactionBO": ("bo_ard", "bo_iso"), "interactionCMA": ("sep_cma", "cma")}.items():
+        d = ((t.loc[probs["rotated"]][a_] - t.loc[probs["aligned"]][a_])
+             - (t.loc[probs["rotated"]][b_] - t.loc[probs["aligned"]][b_])).dropna().to_numpy()
+        number(name, ci_str(*bootstrap_ci(d)), "{}")
     fig.tight_layout()
     fig.savefig(FIG / "fig1_e2_primary.pdf")
     plt.close(fig)
