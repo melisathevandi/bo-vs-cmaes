@@ -190,3 +190,12 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   diagnostics time. The fit/acquisition split, CPU time and per-run timestamps are not stored.
 - `notes/compute_plan.md` regenerated: finished rows marked done, finish dates recomputed from the end of E2 primary
   (5 Nov 00:58) with the original per-run estimates; the estimates for the remaining BO rows were not rescaled.
+
+## 5 Nov: supplementary CMA-ES long runs (e2_cma_long)
+- Addendum `analysis_addendum_e2_cma_long.md` and `configs/e2_cma_long.toml` committed (10d1332) before running. 60 jobs
+  (aligned and rotated, 30 seeds, budget 10,000), 1 worker, 113 s, commit 10d1332, no failures.
+- Integrity: the first 500 evaluations of all 60 runs equal the matching `cma` runs of E2 primary. All 60 runs ended by
+  pycma's own termination before 10,000 evaluations (3,420 to 5,320 evaluations, median 3,895), each at the 1e-12 gap
+  floor, so no run is censored by the 10,000 budget. The reach analysis of the addendum has not been run yet.
+- E1 configs: each E1 config has a single `budget` shared by every method (e1_d2/3: 200, d5: 400, d8: 640, d10: 1000), so
+  CMA-ES in E1 stops at the BO budget. Queued configs not changed.
