@@ -223,3 +223,13 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   All 60 runs reach every target (no censoring); c* defined for 30 of 30 seeds in each cell. The long runs'
   wall-clock times were taken at 1 worker while the E2 low-effective-dimension jobs ran (4 workers), so the c* values
   carry that load.
+
+## 5 Nov: CMA-ES long runs on the E1 problems (e1_d{2,3,5,8,10}_cma_long)
+- Addendum `analysis_addendum_e1_cma_long.md` and five configs committed (4d901fa) before the runs; no queued E1 config
+  edited. 200 jobs (5 dimensions x 2 problems x 20 seeds), 1 worker, finished 5 Nov about 02:34 while E2
+  low-effective-dimension ran at 4 workers (timings carry that load). No failures.
+- All 200 runs ended by pycma termination before the 50,000 cap (lengths: d=2 474 to 1,182; d=10 ellipsoid 2,750 to 3,270,
+  Rosenbrock 5,270 to 7,190). The ellipsoid runs all end at the 1e-12 floor. Rosenbrock runs ending above gap 1e-6
+  (a local minimum, gap about 4): d=5 1 of 20, d=8 2 of 20, d=10 1 of 20, none at d=2 and 3. The target rule of the addendum
+  counts these as censored (terminated) where they never reach a target.
+- The check that the first evaluations equal the E1 CMA-ES runs is pending until E1 has run.
