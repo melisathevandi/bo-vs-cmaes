@@ -117,12 +117,20 @@ data, so no number below comes from it yet.
   sigma0 = 0.15 helps CMA-ES on the ellipsoid pilot only; this is a tuning-effort-symmetry result, reported in the appendix.
   Notebook: 4 Nov.
 
-### E2 primary: rotation and axis alignment (running)
+### E2 primary: rotation and axis alignment
 - **Question (H2).** Do axis-aligned methods (ARD-BO, sep-CMA-ES) lose their advantage under rotation, relative to their
   rotation-insensitive counterparts (iso-BO, full CMA-ES)?
 - **Run.** d = 10, kappa = 1e4, 500 evaluations, 30 seeds; aligned, rotated and an independent aligned replicate (noise
   floor, instance seed offset 5000); ARD-BO, iso-BO, TuRBO, CMA-ES, sep-CMA-ES, Sobol (`configs/e2_primary.toml`).
-- **Results.** Not yet available.
+- **Results** (source `results/summary/e2_primary.csv`, from `code/analyze_e2.py`; log10 gap at n = 500, paired by seed,
+  30 pairs). Noise floor (aligned replicate minus aligned, 99% CI): all six CIs contain 0 (check passes, no flags).
+  Rotation penalty Delta_rot, median [95% CI]: ARD-BO 0.85 [0.71, 0.98]; iso-BO -0.09 [-0.25, 0.18]; TuRBO 1.56 [1.27, 1.63];
+  CMA-ES 0.16 [0.00, 0.41]; sep-CMA-ES 0.87 [0.72, 1.07]; Sobol -0.01 [-0.17, 0.10]. Interactions: ARD minus iso 0.89
+  [0.54, 1.20]; sep-CMA minus CMA 0.77 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15: Delta_rot 0.32
+  [-0.06, 0.61], interaction with sep-CMA 0.62 [0.45, 0.83].
+- **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
+  Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
+  ones little or nothing. Unbounded behaviour is not tested here (E0 only).
 - **Declared secondary variant.** CMA-ES with sigma0 = 0.15, run on the same instances and seeds in a separate experiment
   (`configs/e2_cma_sigma015.toml`, results in `results/raw/e2_cma_sigma015/`). It is reported as secondary and never
   replaces the default CMA-ES or enters the interactions of the main analysis.
@@ -140,7 +148,15 @@ data, so no number below comes from it yet.
   the proportionality constant is 1). Fitted exponent over d in {2, ..., 80}: alpha = 1.71 (all d) and 1.87 (d >= 10), as
   frozen in `predictions.md` (ac4c90f). That number is a computed prediction from the rates; the measured alpha will come
   from `h5_alpha.csv` once `code/h5_learning_time.py` has run on the full grid.
-- **Results.** Not yet available.
+- **Results** (source `results/summary/e2_primary.csv`, from `code/analyze_e2.py`; log10 gap at n = 500, paired by seed,
+  30 pairs). Noise floor (aligned replicate minus aligned, 99% CI): all six CIs contain 0 (check passes, no flags).
+  Rotation penalty Delta_rot, median [95% CI]: ARD-BO 0.85 [0.71, 0.98]; iso-BO -0.09 [-0.25, 0.18]; TuRBO 1.56 [1.27, 1.63];
+  CMA-ES 0.16 [0.00, 0.41]; sep-CMA-ES 0.87 [0.72, 1.07]; Sobol -0.01 [-0.17, 0.10]. Interactions: ARD minus iso 0.89
+  [0.54, 1.20]; sep-CMA minus CMA 0.77 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15: Delta_rot 0.32
+  [-0.06, 0.61], interaction with sep-CMA 0.62 [0.45, 0.83].
+- **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
+  Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
+  ones little or nothing. Unbounded behaviour is not tested here (E0 only).
 
 ### E1: dimension x budget (not yet run)
 - BO (ARD) vs CMA-ES vs Sobol on the rotated ellipsoid (kappa = 1e2) and Rosenbrock, d in {2, 3, 5, 8, 10},

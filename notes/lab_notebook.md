@@ -171,3 +171,12 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   investigated). Written when 7 of 540 E2 primary jobs had finished and none had been opened.
 - Declared secondary variant: CMA-ES with sigma0 = 0.15 on the E2 primary instances and seeds, in its own experiment
   (`configs/e2_cma_sigma015.toml`, 90 CMA-ES jobs, seconds). It does not touch the BO runs or the main results.
+
+## 5 Nov: E2 primary finished and analysed
+- E2 primary: 540 jobs finished 5 Nov about 00:58 (`logs/chain_times.csv`: 47,263 s = 13.1 wall-h) against an estimate of
+  about 21 h with contingency; the estimate was high for this row (aligned-BO runs took 30 to 35 min each, TuRBO and
+  non-BO runs were faster than assumed). E2 low-effective dimension started right after.
+- Pre-registered analysis run once with `code/analyze_e2.py` (commit e7a117d rules): no noise-floor flag, both H2
+  interactions positive with CIs excluding 0. Results in `results/summary/e2_primary.csv`.
+- The BO runs emit many linear_operator NumericalWarnings (Cholesky not positive definite at jitter 1e-3, fallback to
+  symeig; 4,097 lines in `logs/e2_primary.log`). All runs completed; effect on results not examined.
