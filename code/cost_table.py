@@ -11,7 +11,13 @@ total times are equal at
 
 c* is computed per seed (same instance for both methods) when both reach eps and n_BO < n_CMA, and
 summarised by its median. BO is worth its overhead when one evaluation costs more than c*.
-Writes results/summary/cost_table.csv (one row per problem, d and target).
+The CMA-ES side is read from the supplementary long runs `<experiment>_cma_long` (analysis_addendum_e1_cma_long.md)
+when they exist, so CMA-ES can run past the BO budget; otherwise from the CMA-ES runs of the experiment itself (column
+cma_source). Targets (addenda, unchanged): "own" = each BO run's own final gap at its budget (for c*), and the absolute
+gap levels TARGETS. Writes results/summary/cost_table.csv (one row per problem and target, with the CMA-ES seeds that
+never reach the target) and results/summary/cost_censored.csv (one row per such seed, with BO's final gap on it).
+
+    uv run python code/cost_table.py --check-e2     # reproduce the E2 c* values of e2_cma_long_reach.csv
 """
 
 import argparse
@@ -41,39 +47,99 @@ def break_even(run_bo, run_cma, eps):
     return float((run_bo["t_method"][nb] - run_cma["t_method"][nc]) / (nc - nb))
 
 
-def table(df, bo="bo_ard", cma="cma", targets=TARGETS):
-    rows = []
-    for problem, g in df.groupby("problem"):
-        by = {(r.method, r.seed): r for r in g.itertuples()}
-        seeds = sorted({s for m, s in by if m == bo} & {s for m, s in by if m == cma})
-        for eps in targets:
-            cs, n_reach = [], 0
+def final_gap(run, n):
+    """Best-so-far gap of a run after its first n evaluations."""
+    return float(np.min(run.F[:n]) - run.f_star)
+
+
+def _d(r):
+    return {"F": r.F, "f_star": r.f_star, "t_method": r.t_method}
+
+
+def cstar_seeds(bo_runs, cma_runs, budget):
+    """Per-seed c* with target = the BO run's own final gap at `budget`. Returns {seed: c* or None}."""
+    return {s: break_even(_d(b), _d(cma_runs[s]), final_gap(b, budget)) for s, b in bo_runs.items()}
+
+
+def _runs(df, problem, method):
+    return {r.seed: r for r in df[(df.problem == problem) & (df.method == method)].itertuples()}
+
+
+def table(bo_df, cma_df, bo="bo_ard", cma="cma", targets=TARGETS, cma_source="long"):
+    rows, censored = [], []
+    budget = int(bo_df["budget"].max())
+    for problem in sorted(bo_df.problem.unique()):
+        B, C = _runs(bo_df, problem, bo), _runs(cma_df, problem, cma)
+        seeds = sorted(set(B) & set(C))
+        for label, eps_of in [("own", lambda s: final_gap(B[s], budget))] + [(f"{e:g}", lambda s, e=e: e) for e in targets]:
+            cs, nb_l, nc_l, cens = [], [], [], []
             for s in seeds:
-                a, b = by[(bo, s)], by[(cma, s)]
-                nb, nc = (reach(a.F, a.f_star, eps), reach(b.F, b.f_star, eps))
-                n_reach += nb is not None
-                c = break_even({"F": a.F, "f_star": a.f_star, "t_method": a.t_method},
-                               {"F": b.F, "f_star": b.f_star, "t_method": b.t_method}, eps)
+                eps = eps_of(s)
+                nb, nc = reach(B[s].F, B[s].f_star, eps), reach(C[s].F, C[s].f_star, eps)
+                nb_l += [nb + 1] if nb is not None else []
+                if nc is None:
+                    cens.append(s)
+                else:
+                    nc_l.append(nc + 1)
+                c = break_even(_d(B[s]), _d(C[s]), eps)
                 if c is not None:
                     cs.append(c)
-            rows.append({"problem": problem, "target_gap": eps, "n_seeds": len(seeds),
-                         "bo_reaches": n_reach, "bo_first_and_defined": len(cs),
-                         "median_c_star_s": float(np.median(cs)) if cs else np.nan})
-    return pd.DataFrame(rows)
+            q = np.quantile(cs, [0.25, 0.5, 0.75]) if cs else [np.nan] * 3
+            rows.append({"problem": problem, "target": label, "n_seeds": len(seeds), "bo_reaches": len(nb_l),
+                         "cma_reaches": len(nc_l), "cma_censored": len(cens),
+                         "cma_censored_seeds": ";".join(map(str, cens)),
+                         "median_n_bo": float(np.median(nb_l)) if nb_l else np.nan,
+                         "median_n_cma": float(np.median(nc_l)) if nc_l else np.nan,
+                         "c_star_defined": len(cs), "median_c_star_s": q[1], "q1_c_star_s": q[0],
+                         "q3_c_star_s": q[2], "cma_source": cma_source})
+            for s in cens:
+                gaps = {e: reach(B[s].F, B[s].f_star, e) is not None for e in targets}
+                censored.append({"problem": problem, "target": label, "seed": s,
+                                 "cma_final_gap": final_gap(C[s], len(C[s].F)), "cma_n_evals": len(C[s].F),
+                                 "cma_cause": "budget" if len(C[s].F) >= int(cma_df["budget"].max()) else "terminated",
+                                 "bo_final_gap": final_gap(B[s], budget),
+                                 **{f"bo_reaches_{e:g}": v for e, v in gaps.items()}})
+    return pd.DataFrame(rows), pd.DataFrame(censored)
+
+
+def check_e2():
+    """Reproduce the E2 c* values of results/summary/e2_cma_long_reach.csv with the shared functions."""
+    primary, long = load_results("e2_primary"), load_results("e2_cma_long")
+    ref = pd.read_csv(SUMMARY / "e2_cma_long_reach.csv")
+    ref = ref[ref.quantity == "cstar_s"].set_index(["instance", "bo_variant"])
+    worst = 0.0
+    for inst, prob in {"aligned": "ell_d10_k1e4_aligned", "rotated": "ell_d10_k1e4_rotated"}.items():
+        for v in ("bo_ard", "bo_iso"):
+            c = [x for x in cstar_seeds(_runs(primary, prob, v), _runs(long, prob, "cma"), 500).values() if x is not None]
+            r = ref.loc[(inst, v)]
+            diff = max(abs(np.median(c) - r["median"]), abs(np.quantile(c, 0.25) - r["q1"]),
+                       abs(np.quantile(c, 0.75) - r["q3"]), abs(len(c) - r["n_reached"]))
+            worst = max(worst, diff)
+            print(f"{inst:8s} {v:7s} defined {len(c)}  median c* {np.median(c):.4f}  (reference {r['median']:.4f})")
+    print(f"largest absolute difference to e2_cma_long_reach.csv: {worst:.2e}")
+    return worst
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--experiments", nargs="+", default=["e1_d2", "e1_d3", "e1_d5", "e1_d8", "e1_d10"])
+    ap.add_argument("--check-e2", action="store_true")
     args = ap.parse_args()
-    frames = []
+    if args.check_e2:
+        raise SystemExit(0 if check_e2() < 1e-9 else 1)
+    frames, cens = [], []
     for exp in args.experiments:
-        df = load_results(exp)
-        if df.empty:
+        bo_df = load_results(exp)
+        if bo_df.empty:
             continue
-        t = table(df)
+        long = load_results(f"{exp}_cma_long")
+        cma_df, src = (long, "long") if not long.empty else (bo_df, "same_budget")
+        t, c = table(bo_df, cma_df, cma_source=src)
         t.insert(0, "experiment", exp)
+        c.insert(0, "experiment", exp)
         frames.append(t)
+        cens.append(c)
     out = pd.concat(frames, ignore_index=True)
     out.to_csv(SUMMARY / "cost_table.csv", index=False)
+    pd.concat(cens, ignore_index=True).to_csv(SUMMARY / "cost_censored.csv", index=False)
     print(out.round(4).to_string(index=False))

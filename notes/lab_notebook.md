@@ -233,3 +233,12 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   (a local minimum, gap about 4): d=5 1 of 20, d=8 2 of 20, d=10 1 of 20, none at d=2 and 3. The target rule of the addendum
   counts these as censored (terminated) where they never reach a target.
 - The check that the first evaluations equal the E1 CMA-ES runs is pending until E1 has run.
+
+## 5 Nov: cost_table.py reads the CMA-ES long runs
+- `code/cost_table.py` now takes the CMA-ES side from `<experiment>_cma_long` when it exists (column `cma_source`), uses the
+  addenda's targets unchanged (each BO run's own final gap, and the absolute levels 1e-1, 1e-2, 1e-4), and reports per
+  problem and target the CMA-ES seeds that never reach it (`cost_table.csv`) and, per such seed, whether CMA-ES was cut by the
+  budget or by termination and whether BO reached each absolute level (`cost_censored.csv`).
+- Check: `uv run python code/cost_table.py --check-e2` reproduces the E2 c* values of `e2_cma_long_reach.csv` exactly
+  (largest absolute difference 0). A synthetic test covers the censored-seed reporting; 48 tests pass.
+- The E1 table cannot be produced until E1 BO has run.
