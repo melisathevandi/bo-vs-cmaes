@@ -157,3 +157,10 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   sep-CMA-ES and Sobol (negligible cost); BO and TuRBO refit cold every 10 iterations after n = 100.
 - Expected finish times per row are in `notes/compute_plan.md` (lean core about 78 wall-h with contingency: follow-up
   ends about 7 Nov 07:00, i.e. after the 6 Nov gate for the optional rows).
+
+- **Slip (4 Nov): the chain did not start after the first launch.** I launched it with `setsid`, which does not exist in
+  this shell, so it never ran. The BO grid finished at 04:28 and the 7 workers were idle until I noticed at 10:50 (about
+  6.4 h lost). Relaunched with `nohup`; the decision rule was applied at 10:52: all defaults kept (BO: no alternative
+  beats the default on both problems; CMA-ES: sigma0 = 0.15 wins on the rotated ellipsoid only). Frozen configs committed
+  (eca7c30). E2 primary started 4 Nov about 10:52, so all expected finish times in `notes/compute_plan.md` move later by
+  about 6.4 h.
