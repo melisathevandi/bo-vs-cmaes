@@ -139,6 +139,15 @@ data, so no number below comes from it yet.
   | CMA-ES | 2.73 [2.58, 2.93] | 2.97 [2.78, 3.24] |
   | sep-CMA-ES | 2.08 [1.91, 2.25] | 3.04 [2.84, 3.24] |
   | Sobol | 3.76 [3.62, 3.94] | 3.72 [3.63, 3.80] |
+- **Supplementary CMA-ES long runs (descriptive; `analysis_addendum_e2_cma_long.md`, results
+  `results/summary/e2_cma_long_reach.csv`, `code/analyze_cma_long.py`).** 60 CMA-ES runs of up to 10,000 evaluations on
+  the aligned and rotated instances; all 60 ended by pycma's own termination (3,420 to 5,320 evaluations) at the 1e-12 floor.
+  Evaluations needed to reach the median final gap that BO has at n = 500, median [Q1, Q3] over 30 runs (all 30 reach it, no
+  censoring): aligned, ARD-BO target 9.0: 1,254 [1,100, 1,330]; aligned, iso-BO target 39.9: 954 [842, 1,070]; rotated,
+  ARD-BO target 56.8: 1,156 [973, 1,330]; rotated, iso-BO target 39.6: 1,216 [1,082, 1,522]. Break-even cost c* (paired by
+  seed, target = each BO run's own final gap, 30 of 30 seeds defined), median [Q1, Q3] in seconds per evaluation: aligned
+  ARD-BO 1.84 [1.22, 2.30], aligned iso-BO 0.90 [0.61, 1.08], rotated ARD-BO 1.91 [1.26, 2.68], rotated iso-BO 0.78
+  [0.52, 1.33]. Timings were taken while other jobs were running.
 - **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
   Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
   ones little or nothing. Unbounded behaviour is not tested here (E0 only).
@@ -176,6 +185,15 @@ data, so no number below comes from it yet.
   | CMA-ES | 2.73 [2.58, 2.93] | 2.97 [2.78, 3.24] |
   | sep-CMA-ES | 2.08 [1.91, 2.25] | 3.04 [2.84, 3.24] |
   | Sobol | 3.76 [3.62, 3.94] | 3.72 [3.63, 3.80] |
+- **Supplementary CMA-ES long runs (descriptive; `analysis_addendum_e2_cma_long.md`, results
+  `results/summary/e2_cma_long_reach.csv`, `code/analyze_cma_long.py`).** 60 CMA-ES runs of up to 10,000 evaluations on
+  the aligned and rotated instances; all 60 ended by pycma's own termination (3,420 to 5,320 evaluations) at the 1e-12 floor.
+  Evaluations needed to reach the median final gap that BO has at n = 500, median [Q1, Q3] over 30 runs (all 30 reach it, no
+  censoring): aligned, ARD-BO target 9.0: 1,254 [1,100, 1,330]; aligned, iso-BO target 39.9: 954 [842, 1,070]; rotated,
+  ARD-BO target 56.8: 1,156 [973, 1,330]; rotated, iso-BO target 39.6: 1,216 [1,082, 1,522]. Break-even cost c* (paired by
+  seed, target = each BO run's own final gap, 30 of 30 seeds defined), median [Q1, Q3] in seconds per evaluation: aligned
+  ARD-BO 1.84 [1.22, 2.30], aligned iso-BO 0.90 [0.61, 1.08], rotated ARD-BO 1.91 [1.26, 2.68], rotated iso-BO 0.78
+  [0.52, 1.33]. Timings were taken while other jobs were running.
 - **Interpretation.** Both pre-registered H2 interactions are positive with CIs excluding 0 in this bounded setting.
   Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
   ones little or nothing. Unbounded behaviour is not tested here (E0 only).

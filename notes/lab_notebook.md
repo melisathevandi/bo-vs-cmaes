@@ -217,3 +217,9 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   e2_lowdim jobs and the sensitivity grids (log header `N jobs, 7 workers`). The 60 `e2_cma_long` jobs used 1 worker.
 - Estimate for the remaining e2_lowdim: about 35.5 CPU-h, 7 to 9 wall-h at 4 workers (about 10 h with contingency).
   TuRBO at d = 20 has no measured run time yet (33.6 min per run planned).
+
+## 5 Nov: reach analysis of the CMA-ES long runs
+- `code/analyze_cma_long.py` run once as specified in the addendum; output `results/summary/e2_cma_long_reach.csv`.
+  All 60 runs reach every target (no censoring); c* defined for 30 of 30 seeds in each cell. The long runs'
+  wall-clock times were taken at 1 worker while the E2 low-effective-dimension jobs ran (4 workers), so the c* values
+  carry that load.
