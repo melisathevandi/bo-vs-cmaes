@@ -46,12 +46,22 @@ def build_jobs(cfg, quick=False):
     return jobs
 
 
-def _worker(spec):
+def _worker(args):
+    spec, workers = args
+    import json
     import torch
     torch.set_num_threads(1)
-    from runner import run_job
+    from runner import RAW, job_id, run_job
+    existed = (RAW / spec["experiment"] / f"{job_id(spec)}.json").exists()
     t = time.perf_counter()
     path = run_job(spec)
+    if not existed:
+        # record how many workers shared the machine; kept out of the spec so the job hash is unchanged
+        record = json.loads(path.read_text())
+        record["workers"] = workers
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(record))
+        tmp.replace(path)
     return spec, path, time.perf_counter() - t
 
 
@@ -67,7 +77,7 @@ if __name__ == "__main__":
     print(f"{len(jobs)} jobs, {args.workers} workers", flush=True)
     start = time.perf_counter()
     with mp.get_context("spawn").Pool(args.workers) as pool:
-        for i, (spec, path, secs) in enumerate(pool.imap_unordered(_worker, jobs), 1):
+        for i, (spec, path, secs) in enumerate(pool.imap_unordered(_worker, [(j, args.workers) for j in jobs]), 1):
             print(f"[{i}/{len(jobs)}] {spec['problem'].get('name', spec['problem']['family'])} "
                   f"{spec['method']['name']} seed={spec['seed']} {secs:.1f}s", flush=True)
     print(f"done in {time.perf_counter() - start:.0f}s")
