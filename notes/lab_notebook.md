@@ -254,3 +254,12 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   scripts under `code/` were uncommitted at the time. `code/methods`, `runner.py`, `problems.py` and `diagnostics.py` are
   identical to f53f5f6.
 - Chain driver stopped; H5 and E1 not started, pending the E1 worker count decision.
+
+## 5 Nov: H5 run, and a bug fix in the alpha fit
+- H5 ran with 7 workers on 5 Nov from 11:01 (220 jobs, about 3 min). The final summary step failed with `need at least one
+  array to concatenate`: `fit_alpha` filtered with `table.T.notna()`, and `DataFrame.T` is the transpose, not the column `T`.
+  Fixed to `table["T"].notna()` in `code/h5_learning_time.py`; the raw runs were untouched and the summary was rerun twice, with
+  identical `h5_alpha.csv` and `h5_learning_time.csv` (bootstrap seed 0). No definition changed.
+- Result against the frozen prediction (`predictions.md`): the d >= 10 CI excludes 1.87, so the refutation criterion is met
+  (see `notes/report_notes.md`, H5). The H5 records have no worker field; the log header says 7 workers.
+- Also on 5 Nov: rho and rank-correlation analysis of E2 low-effective dimension (`code/analyze_lowdim.py`).

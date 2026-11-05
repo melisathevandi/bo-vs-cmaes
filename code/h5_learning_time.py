@@ -102,7 +102,7 @@ def _job(args):
 
 def fit_alpha(table, tau, dmin, n_boot=10_000, seed=0):
     """OLS slope of log T on log d, bootstrap CI over seeds within each d."""
-    t = table[(table.tau == tau) & table.T.notna() & (table.d >= dmin)]
+    t = table[(table.tau == tau) & table["T"].notna() & (table.d >= dmin)]
     groups = [g["T"].to_numpy() for _, g in t.groupby("d")]
     logd = np.log(np.array(sorted(t.d.unique()), float))
     def slope(samples):

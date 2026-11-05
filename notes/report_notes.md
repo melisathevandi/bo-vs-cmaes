@@ -158,16 +158,35 @@ data, so no number below comes from it yet.
   noise-floor check (99% CIs for the six methods and a tolerance in decades), the primary statistics and the secondary
   variant. The script is `code/analyze_e2.py`.
 
-### E2 low-effective dimension (not yet run)
+### E2 low-effective dimension
 - d = 20, d_eff = 2, aligned vs rotated, 500 evaluations, 20 seeds; rho and rank correlation at checkpoints
   (`configs/e2_lowdim.toml`). Prediction: rho >= 0.5 aligned, <= 0.2 rotated at n = 200 (guess).
+- **Results at n = 200** (`results/summary/e2_lowdim_rho.csv`, `code/analyze_lowdim.py`; descriptive, 20 runs per instance,
+  median [Q1, Q3]). rho of ARD-BO: aligned 0.998 [0.997, 0.999] (20 of 20 runs >= 0.5); rotated 0.168 [0.143, 0.183] (17 of 20
+  runs <= 0.2; isotropic baseline 0.1). GP rank correlation: ARD-BO aligned 0.9999 [0.9996, 0.9999], rotated 0.44
+  [0.35, 0.47]; iso-BO aligned 0.34 [0.31, 0.40], rotated 0.38 [0.29, 0.40]. Spread of rho across the 5 multi-start fits
+  (median over runs): 0.021 aligned, 0.013 rotated.
+- **Lengthscales.** The model has no upper bound on the lengthscale (Positive constraint, bound inf), so "at the bound" is
+  reported as above 10 and above 100 box widths. Aligned: all 18 irrelevant lengthscales exceed 10 in 20 of 20 runs and
+  exceed 100 in 14 of 20 runs (84% of irrelevant lengthscales on average exceed 100; largest 527); the median relevant
+  lengthscale is 2.0. Rotated: 8.5% of lengthscales exceed 10, none exceed 100 (largest 21.8).
+- Both thresholds hold at the median. The checkpoints are n = 40, 50, 100, 150, 200 (see the lab notebook, 5 Nov).
 
-### H5: CMA-ES learning time (expected exponent done; runs not yet run)
+### H5: CMA-ES learning time
 - **Expected exponent from the learning rates alone** (`h5_expected_alpha.csv`, 8a44b8c; evaluations ~ lambda/(c1 + c_mu),
   pycma 4.5.0 rates): 25.0 evaluations at d = 2, 257 at d = 10, 12,544 at d = 80 (file column `evals_pycma`, in units where
   the proportionality constant is 1). Fitted exponent over d in {2, ..., 80}: alpha = 1.71 (all d) and 1.87 (d >= 10), as
   frozen in `predictions.md` (ac4c90f). That number is a computed prediction from the rates; the measured alpha will come
   from `h5_alpha.csv` once `code/h5_learning_time.py` has run on the full grid.
+- **Results** (`results/summary/h5_learning_time.csv`, `h5_alpha.csv`, `code/h5_learning_time.py`; 220 runs, 11 dimensions
+  x 20 seeds, no run censored by the cap). Primary endpoint tau = 10, alpha [95% CI]: all d 1.82 [1.80, 1.84] (170 runs);
+  d >= 10 2.02 [1.99, 2.06] (90 runs). Other thresholds: tau = 3 all d 1.74 [1.71, 1.78], d >= 10 1.72 [1.57, 1.85];
+  tau = 100 all d 1.94 [1.92, 1.96], d >= 10 2.17 [2.16, 2.19]. The d >= 10 interval at tau = 10 excludes the predicted 1.87
+  and contains 2; the all-d interval excludes the predicted 1.71 and 2.
+- **Precision before the threshold.** At tau = 10, 50 of 220 runs reached machine precision in f before kappa_t fell below
+  the threshold: 10 of 20 at d = 40 and 20 of 20 at d = 60 and 80. Those runs have no T and are left out of the fit, so the
+  tau = 10 fits use d <= 40 with d = 40 half-observed (median T at d = 40 is from the 10 runs that reached it). T at d = 60 and
+  80 is not measured at tau = 10 (tau = 100 has 18 to 20 runs there).
 - **Results** (source `results/summary/e2_primary.csv`, from `code/analyze_e2.py`; log10 gap at n = 500, paired by seed,
   30 pairs). Noise floor (aligned replicate minus aligned, 99% CI): all six CIs contain 0 (check passes, no flags).
   Rotation penalty Delta_rot, median [95% CI]: ARD-BO 0.85 [0.71, 0.98]; iso-BO -0.09 [-0.25, 0.18]; TuRBO 1.56 [1.27, 1.63];
@@ -219,10 +238,10 @@ data, so no number below comes from it yet.
 | Hypothesis | Prediction (frozen in `predictions.md`, ac4c90f) | Status |
 |---|---|---|
 | H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | pending (E1) |
-| H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | CMA-ES part consistent with E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`). The prediction was informed by E0, so this is not an independent test. E2 runs bounded only, so the unbounded part rests on E0 alone. The rest is pending (E2) |
+| H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | CMA-ES part consistent with E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`). The prediction was informed by E0, so this is not an independent test. E2 runs bounded only, so the unbounded part rests on E0 alone. rho at n = 200: 0.998 aligned (threshold 0.5), 0.168 rotated (threshold 0.2), medians over 20 runs (`e2_lowdim_rho.csv`); the two interactions are positive with CIs excluding 0 (`e2_primary.csv`) |
 | H3 | P(success) falls with basin width; IPOP beats default CMA-ES at larger budgets; UCB beats LogEI on the narrowest basin | not run (E3 optional) |
 | H4 | c* increases with budget and with d | pending (E1 logs) |
-| H5 | CI of alpha-hat (d >= 10) contains 1.87; alpha-hat (all d) about 1.7 | expected values computed (1.87, 1.71; `h5_expected_alpha.csv`); measurement pending |
+| H5 | CI of alpha-hat (d >= 10) contains 1.87; alpha-hat (all d) about 1.7 | d >= 10 (tau = 10): 2.02 [1.99, 2.06], excludes 1.87, so the pre-registered refutation criterion is met; all d: 1.82 [1.80, 1.84] against about 1.7 (`h5_alpha.csv`). 50 of 220 runs reached machine precision first (d = 40, 60, 80), left out of the fit |
 
 ## 5. Surprises and negative results
 - **Seeding bug** (found in E0): CMA-ES's start was a function of the optimum because instance and method randomness shared
