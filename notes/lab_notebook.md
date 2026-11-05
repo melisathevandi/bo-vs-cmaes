@@ -242,3 +242,15 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - Check: `uv run python code/cost_table.py --check-e2` reproduces the E2 c* values of `e2_cma_long_reach.csv` exactly
   (largest absolute difference 0). A synthetic test covers the censored-seed reporting; 48 tests pass.
 - The E1 table cannot be produced until E1 BO has run.
+
+## 5 Nov: E2 low-effective dimension finished
+- 200 of 200 jobs, no duplicates, no error since the 4-worker restart (about 02:35 to 10:35; `done in 28,522 s` = 7.9 h for the
+  162 resumed jobs; the first 38 ran at 7 workers). Estimated about 7 to 9 wall-h at 4 workers (10 h with contingency).
+- Per-run wall time, median: aligned ARD-BO 1,541 s (7 workers), rotated ARD-BO 2,637 s (4 workers), iso-BO 724 to 806 s,
+  TuRBO 1,116 s aligned and 1,208 s rotated (4 workers; planned 2,016 s), CMA-ES and Sobol under 1 s. Rotated ARD-BO runs are
+  71% slower than aligned ones even though they ran with fewer workers, so ARD-BO times are not comparable across the two
+  instances or the two worker counts; the per-instance cost is a property of the fit, not of the load.
+- 7 records have `code_dirty = true` (6 aligned iso-BO written at 977d3a3 and 244998e, 1 aligned TuRBO at b00b49d): analysis
+  scripts under `code/` were uncommitted at the time. `code/methods`, `runner.py`, `problems.py` and `diagnostics.py` are
+  identical to f53f5f6.
+- Chain driver stopped; H5 and E1 not started, pending the E1 worker count decision.
