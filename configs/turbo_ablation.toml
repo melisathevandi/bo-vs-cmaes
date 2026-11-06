@@ -1,0 +1,43 @@
+# Follow-up: ablation of TuRBO's rotation penalty (predictions.md, follow-up section and its two amendments).
+# Same instances, seeds, budget and TuRBO settings as the TuRBO runs of configs/e2_primary.toml (the default variant,
+# ARD kernel with an ARD-scaled trust region, is those runs and is not repeated). Two variants:
+#   turbo_cubic_ard: ARD kernel, cubic trust region (region = "cube"); turbo_iso: isotropic kernel (ard = false), cubic region.
+experiment = "turbo_ablation"
+budget = 500
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+
+[[problems]]
+name = "ell_d10_k1e4_aligned"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = false
+
+[[problems]]
+name = "ell_d10_k1e4_rotated"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = true
+
+[[problems]]
+name = "ell_d10_k1e4_aligned_rep"
+family = "ellipsoid"
+d = 10
+kappa = 10000.0
+rotated = false
+instance_seed_offset = 5000
+
+[[methods]]
+name = "turbo_cubic_ard"
+module = "turbo"
+[methods.cfg]
+refit_every = 10
+region = "cube"
+
+[[methods]]
+name = "turbo_iso"
+module = "turbo"
+[methods.cfg]
+refit_every = 10
+ard = false

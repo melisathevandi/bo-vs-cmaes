@@ -25,17 +25,22 @@ from methods.bo import build_model, fit, load
 L_INIT, L_MIN, L_MAX = 0.8, 0.5**7, 1.6
 
 
-def trust_region(model, x_center, length, d):
-    ls = model.covar_module.base_kernel.lengthscale.detach().numpy().ravel()
-    w = ls / ls.mean()
-    w = w / np.prod(w ** (1.0 / d))             # keep the volume independent of the weights
+def trust_region(model, x_center, length, d, region="ard"):
+    """Box around the centre. region="ard": sides scaled by the ARD lengthscales (default, as in TuRBO);
+    region="cube": all sides equal (also what an isotropic kernel gives)."""
+    if region == "cube":
+        w = np.ones(d)
+    else:
+        ls = model.covar_module.base_kernel.lengthscale.detach().numpy().ravel()
+        w = ls / ls.mean()
+        w = w / np.prod(w ** (1.0 / d))         # keep the volume independent of the weights
     lb = np.clip(x_center - w * length / 2.0, 0.0, 1.0)
     ub = np.clip(x_center + w * length / 2.0, 0.0, 1.0)
     return lb, ub
 
 
 def run(problem, budget, seed, nu=2.5, n_init_factor=2.0, refit_after=100, refit_every=5,
-        n_candidates=None, succ_tol=10, fail_tol=None, **_):
+        n_candidates=None, succ_tol=10, fail_tol=None, ard=True, region="ard", **_):
     d = problem.dim
     rng = np.random.default_rng(seed)
     torch.manual_seed(seed)
@@ -63,7 +68,7 @@ def run(problem, budget, seed, nu=2.5, n_init_factor=2.0, refit_after=100, refit
             x = np.array(tracker.X[start:])
             f = np.array(tracker.F[start:])
             model = build_model(torch.tensor(x), torch.tensor(-f).unsqueeze(-1),
-                                ard=True, nu=nu)
+                                ard=ard, nu=nu)
             if saved is None or len(f) <= refit_after or len(f) - last_fit_n >= refit_every:
                 saved = fit(model, saved)
                 last_fit_n = len(f)
@@ -71,7 +76,7 @@ def run(problem, budget, seed, nu=2.5, n_init_factor=2.0, refit_after=100, refit
                 load(model, saved)
 
             center = x[int(np.argmin(f))]
-            lb, ub = trust_region(model, center, length, d)
+            lb, ub = trust_region(model, center, length, d, region if ard else "cube")
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 u = qmc.Sobol(d, scramble=True, seed=int(rng.integers(0, 2**31 - 1))
@@ -97,4 +102,4 @@ def run(problem, budget, seed, nu=2.5, n_init_factor=2.0, refit_after=100, refit
         restarts += 1
 
     return tracker.result(method="turbo", nu=nu, n_init=n_init, restarts=restarts - 1,
-                          n_candidates=n_candidates)
+                          n_candidates=n_candidates, ard=ard, region=region if ard else "cube")
