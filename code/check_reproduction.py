@@ -7,7 +7,9 @@ Steps
   2. `git clone` of the committed state (HEAD) into a temporary directory, so anything that is only in the working
      tree (uncommitted code, untracked files) cannot be used. results/raw is not tracked (size), so it is linked into
      the clone from --raw.
-  3. Every analysis script that reads results/raw is run in the clone, then make_tables.py and make_figures.py.
+  3. The derived files (everything in results/summary except the outputs of the scripts listed at the end, and all of
+     report/generated and report/figures) are deleted in the clone, then every analysis script that reads results/raw
+     is run, then make_tables.py and make_figures.py.
   4. Every file under results/summary, report/generated and report/figures in the clone must be identical to the
      committed one (`git status` in the clone shows no change). Figures are written without a creation date, so
      they compare byte for byte.
@@ -15,7 +17,8 @@ Steps
      every listed prefix matches at least one macro.
   6. With --latex, report/report.tex compiles in the clone.
 Not re-derived here (they run new computations rather than read results/raw): e0_invariance.py, anchor.py,
-pilot_timing.py, diagnose_warm_start.py, e3_exploration_check.py, compute_plan.py. Their outputs are tracked as they were run.
+pilot_timing.py, diagnose_warm_start.py, e3_exploration_check.py, compute_plan.py, and the pilot run-time table. Their outputs are
+tracked as they were run and kept in the clone.
 Exit status 0 only if every check passes.
 """
 
@@ -111,6 +114,16 @@ def main():
     run(["git", "clone", "--quiet", str(ROOT), str(clone)], ROOT)
     link(raw, clone / "results" / "raw")
     print(f"[2] cloned HEAD to {clone}; results/raw linked from {raw}")
+
+    # Delete every derived file first, so that a script that silently writes nothing shows up as a missing file.
+    kept = {"e0_rotation.csv", "anchor.csv", "pilot_timing.csv", "pilot_run_timing.csv", "a4_warm_start_diagnostic.csv",
+            "e3_exploration_check.txt"}
+    for f in (clone / "results" / "summary").iterdir():
+        if f.name not in kept:
+            f.unlink()
+    for d in ("report/generated", "report/figures"):
+        for f in (clone / d).iterdir():
+            f.unlink()
 
     env = dict(os.environ, OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", PYTHONHASHSEED="0")
     for script, extra, ok in PIPELINE:
