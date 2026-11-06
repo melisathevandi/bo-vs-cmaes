@@ -72,5 +72,30 @@ grows with n. c* is computed from the measured overheads, not predicted as a num
   rates alone do not explain the scaling (the evolution path and step-size adaptation also affect
   learning), and say whether alpha is still compatible with 2.
 
-## Follow-up experiment
-Chosen after E1-E3; its prediction is committed separately, before it runs.
+## Follow-up experiment: what drives TuRBO's rotation penalty (committed 2026-11-06, before the runs)
+**What was already seen.** The E2 primary analysis (d=10, kappa=1e4, 500 evaluations, 30 seeds) gave the rotation penalty
+Delta_rot (median paired log10 gap, rotated minus aligned): TuRBO 1.56, ARD-BO 0.85, isotropic BO -0.09. This follow-up is
+chosen because TuRBO's penalty is the largest; the numbers above are known, so the predictions below are informed by them.
+
+**Design.** Same E2 primary instances (aligned and rotated ellipsoid, d=10, kappa=1e4, instance seeds 0-29), 500 evaluations,
+seeds 0-29, same TuRBO tolerances and refit schedule. Three variants, a 2 x 2 design with one cell empty by construction:
+1. *default* TuRBO (ARD kernel, trust region box with sides scaled by the ARD lengthscales): the E2 runs, not repeated;
+2. *ARD kernel, cubic region*: the kernel is ARD, but the trust-region sides are all equal (weights = 1);
+3. *isotropic kernel, cubic region*: one shared lengthscale (the region is then a cube anyway, so "isotropic kernel with
+   ARD-scaled box" does not exist).
+New runs: 2 variants x 2 problems x 30 seeds = 120. Default behaviour of the code is unchanged (checked before the runs).
+
+**Statistics (paired by seed, 95% percentile bootstrap, 10,000 resamples, seed 0).** For each variant, Delta_rot as defined in
+H2, and the rotated and aligned median gaps separately (a smaller Delta_rot could come from a worse aligned result and
+must be visible). Contrasts: Delta_rot(cubic ARD) - Delta_rot(default) and Delta_rot(isotropic) - Delta_rot(cubic ARD),
+resampling seeds independently across the problem pair of each variant (different runs, same instances).
+
+**Predictions.**
+- *Cubic ARD:* the rotation penalty is close to ARD-BO's, 0.85: Delta_rot in [0.45, 1.25] (ARD-BO value +/- 0.4), with the CI
+  excluding 0, and Delta_rot(cubic ARD) - Delta_rot(default) < 0 with a CI excluding 0 (the ARD-scaled region adds penalty).
+- *Isotropic:* the penalty is near 0: |Delta_rot| <= 0.3 with the CI containing 0.
+*Would refute (cubic ARD):* Delta_rot outside [0.45, 1.25], or the contrast with the default CI containing 0 (then the region
+shape does not explain TuRBO's excess penalty over ARD-BO).
+*Would refute (isotropic):* |Delta_rot| > 0.3 or a CI excluding 0.
+Both outcomes are reported whichever way they go. No aligned-replicate noise floor is run for the variants; the E2 replicate
+for default TuRBO is the only noise reference and this is stated as a limitation.
