@@ -1,0 +1,49 @@
+# E3 d=2, larger budget: CMA-ES, IPOP-CMA-ES and Sobol only (cheap), 2000 evaluations, same widths and seeds as e3_d2.
+# Used for the H3 statement about IPOP at larger budgets; BO is not run at this budget.
+experiment = "e3_d2_long"
+budget = 2000
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+
+[[problems]]
+name = "decoy_w0p2"
+family = "decoy_basin"
+d = 2
+width = 0.2
+
+[[problems]]
+name = "decoy_w0p1"
+family = "decoy_basin"
+d = 2
+width = 0.1
+
+[[problems]]
+name = "decoy_w0p05"
+family = "decoy_basin"
+d = 2
+width = 0.05
+
+[[problems]]
+name = "decoy_w0p025"
+family = "decoy_basin"
+d = 2
+width = 0.025
+
+[[problems]]
+name = "decoy_w0p0125"
+family = "decoy_basin"
+d = 2
+width = 0.0125
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "cma_ipop"
+module = "cmaes"
+[methods.cfg]
+ipop = true
+
+[[methods]]
+name = "sobol"
+module = "sobol"

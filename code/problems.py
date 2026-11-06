@@ -112,3 +112,39 @@ def rosenbrock(d, seed=0):
     f.f_star = 0.0
     f.dim = d
     return f
+
+
+F_DECOY = 1.0       # minimum of the broad (decoy) basin; the narrow basin reaches 0
+
+
+def decoy_basin(d=2, width=0.1, seed=0):
+    """Decoy-basin function for E3: f(u) = min(B(u), D(u)) on the unit cube.
+
+    B(u) = F_DECOY + 4 ||u - c_b||^2 is a broad basin whose minimum is F_DECOY = 1 at c_b.
+    D(u) = ||u - c_n||^2 / width^2 is a narrow basin with minimum 0 at c_n (the global
+    optimum). D < F_DECOY exactly when ||u - c_n|| < width, and B >= F_DECOY everywhere, so
+    f(u) < F_DECOY if and only if u is inside the ball of radius `width` around c_n: the
+    success event "better than anything the decoy basin offers" is a ball of that radius.
+    c_b is drawn uniformly in [0.2, 0.8]^d, then c_n the same way, redrawn until
+    ||c_n - c_b|| >= 0.4. The seed fixes both centres (and nothing depends on the width, so
+    instances with the same seed share the centres across widths).
+    """
+    rng = np.random.default_rng(seed)
+    c_b = _sample_optimum(d, rng)
+    c_n = _sample_optimum(d, rng)
+    while np.linalg.norm(c_n - c_b) < 0.4:
+        c_n = _sample_optimum(d, rng)
+
+    def f(u):
+        u = np.asarray(u, dtype=float)
+        broad = F_DECOY + 4.0 * float(np.sum((u - c_b) ** 2))
+        narrow = float(np.sum((u - c_n) ** 2)) / width ** 2
+        return min(broad, narrow)
+
+    f.u_star = c_n
+    f.f_star = 0.0
+    f.dim = d
+    f.centre_broad = c_b
+    f.width = width
+    f.f_decoy = F_DECOY
+    return f

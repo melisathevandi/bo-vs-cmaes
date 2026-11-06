@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from problems import ellipsoid, low_effective_dim, random_rotation, rosenbrock
+from problems import F_DECOY, decoy_basin, ellipsoid, low_effective_dim, random_rotation, rosenbrock
 
 
 @pytest.mark.parametrize("d", [2, 5, 10, 20])
@@ -103,3 +103,28 @@ def test_low_eff_dim_uniform_sample_scale_similar_aligned_vs_rotated():
 def test_ellipsoid_rejects_dim_one():
     with pytest.raises(ValueError):
         ellipsoid(1)
+
+
+@pytest.mark.parametrize("width", [0.2, 0.1, 0.05, 0.0125])
+def test_decoy_values_at_the_two_minima(width):
+    f = decoy_basin(2, width, seed=4)
+    assert f(f.u_star) == 0.0
+    assert f(f.centre_broad) == pytest.approx(F_DECOY)       # decoy minimum, strictly above the narrow one
+    assert np.linalg.norm(f.u_star - f.centre_broad) >= 0.4
+
+
+@pytest.mark.parametrize("width", [0.2, 0.05])
+def test_decoy_below_f_decoy_iff_inside_the_ball(width):
+    """Success (f < F_DECOY) happens exactly inside the ball of radius `width` around c_n."""
+    f = decoy_basin(2, width, seed=7)
+    u = np.random.default_rng(0).uniform(0, 1, size=(20000, 2))
+    inside = np.linalg.norm(u - f.u_star, axis=1) < width
+    below = np.array([f(x) < F_DECOY for x in u])
+    np.testing.assert_array_equal(inside, below)
+    assert min(f(x) for x in u) >= 0.0
+
+
+def test_decoy_centres_do_not_depend_on_width():
+    a, b = decoy_basin(2, 0.2, seed=3), decoy_basin(2, 0.0125, seed=3)
+    np.testing.assert_array_equal(a.u_star, b.u_star)
+    np.testing.assert_array_equal(a.centre_broad, b.centre_broad)
