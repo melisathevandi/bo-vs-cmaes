@@ -1,0 +1,26 @@
+# kappa=1e4 supplement for H1 (analysis_addendum_e1_kappa1e4.md): rotated ellipsoid, same methods, budget (400) and seeds as configs/e1_d5.toml.
+experiment = "e1k4_d5"
+budget = 400
+seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+[[problems]]
+name = "ell_k1e4_rotated"
+family = "ellipsoid"
+d = 5
+kappa = 10000.0
+rotated = true
+
+[[methods]]
+name = "bo_ard"
+module = "bo"
+[methods.cfg]
+refit_every = 10
+warm_start = false
+
+[[methods]]
+name = "cma"
+module = "cmaes"
+
+[[methods]]
+name = "sobol"
+module = "sobol"
