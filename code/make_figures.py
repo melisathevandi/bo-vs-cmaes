@@ -101,7 +101,7 @@ def fig1_e2_primary():
              - (t.loc[probs["rotated"]][b_] - t.loc[probs["aligned"]][b_])).dropna().to_numpy()
         number(name, ci_str(*bootstrap_ci(d)), "{}")
     fig.tight_layout()
-    fig.savefig(FIG / "fig1_e2_primary.pdf")
+    fig.savefig(FIG / "fig1_e2_primary.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
 
@@ -154,7 +154,7 @@ def fig2_e2_lowdim():
     for a in ax[1:]:
         a.set_xlabel("n")
     fig.tight_layout()
-    fig.savefig(FIG / "fig2_e2_lowdim.pdf")
+    fig.savefig(FIG / "fig2_e2_lowdim.pdf", metadata={"CreationDate": None})
     plt.close(fig)
     if not ard.empty:
         for prob, tag in (("lowdim_d20_deff2_aligned", "aligned"), ("lowdim_d20_deff2_rotated", "rotated")):
@@ -228,6 +228,14 @@ def fig3_e1_h5():
             d = int(r.experiment.split("_d")[1])
             number(f"cstar{PROB_WORD[r.problem]}{WORD[d]}", ci_str(r.median_c_star_s, r.q1_c_star_s, r.q3_c_star_s).replace("[", "[IQR ", 1), "{}")
             number(f"cstardefined{PROB_WORD[r.problem]}{WORD[d]}", f"{int(r.c_star_defined)}", "{}")
+    rm = csv("e1_regime_map.csv")
+    if rm is not None:
+        for _, r in rm[(rm.comparison == "bo_ard-cma") & rm.final_budget].iterrows():
+            number(f"Honefinal{PROB_WORD[r.problem]}{WORD[int(r.d)]}", ci_str(r.median_diff, r.ci_lo, r.ci_hi), "{}")
+    oh = csv("e1_overhead.csv")
+    if oh is not None:
+        for _, r in oh[oh.method == "bo_ard"].iterrows():
+            number(f"overheadboard{PROB_WORD[r.problem]}{WORD[int(r.d)]}", float(r.median_overhead_s_per_eval))
     if h5 is not None:
         t = h5[(h5.tau == 10) & h5["T"].notna()]
         g = t.groupby("d")["T"]
@@ -245,7 +253,7 @@ def fig3_e1_h5():
         ax[2].set_ylabel("evaluations to $\\kappa_t<10$", fontsize=7)
         ax[2].set_title("(c) CMA-ES learning time", fontsize=7)
     fig.tight_layout()
-    fig.savefig(FIG / "fig3_e1_h5.pdf")
+    fig.savefig(FIG / "fig3_e1_h5.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
 
@@ -274,7 +282,7 @@ def fig4_e3():
     ax[0].set_ylabel("P(success)")
     ax[0].legend(fontsize=5)
     fig.tight_layout()
-    fig.savefig(FIG / "fig4_e3.pdf")
+    fig.savefig(FIG / "fig4_e3.pdf", metadata={"CreationDate": None})
     plt.close(fig)
     t = csv("e3_tests.csv")
     for src, nn in (("short200", "twohundred"), ("long2000", "twothousand")):
@@ -323,7 +331,7 @@ def fig5_ablation():
     ax[1].legend(fontsize=6)
     ax[1].set_title("(b) rotation penalty and aligned-replicate floor", fontsize=8)
     fig.tight_layout()
-    fig.savefig(FIG / "fig5_ablation.pdf")
+    fig.savefig(FIG / "fig5_ablation.pdf", metadata={"CreationDate": None})
     plt.close(fig)
     for name, tag in (("turbo (default)", "default"), ("turbo_cubic_ard", "cubic"), ("turbo_iso", "iso")):
         r = tt.loc[name]
