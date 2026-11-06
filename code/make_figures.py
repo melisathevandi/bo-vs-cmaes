@@ -33,6 +33,9 @@ LABELS = {"bo_ard": "ARD-BO", "bo_iso": "iso-BO", "cma": "CMA-ES", "sep_cma": "s
 WORD = {2: "two", 3: "three", 5: "five", 8: "eight", 10: "ten", 20: "twenty"}
 PROB_WORD = {"ell_k100_rotated": "ellipsoid", "rosenbrock": "rosenbrock"}
 NUMBERS, SKIPPED = {}, []
+W = 6.5                                  # figure width in inches = the report's text width, so sizes below are print sizes
+plt.rcParams.update({"font.size": 7, "axes.titlesize": 7, "axes.labelsize": 7, "xtick.labelsize": 6.5,
+                     "ytick.labelsize": 6.5, "legend.fontsize": 6, "lines.linewidth": 1.1})
 
 
 def have(experiment):
@@ -65,7 +68,7 @@ def fig1_e2_primary():
     methods = [m for m in COLORS if m in t.columns and m != "sobol"]
     probs = {"aligned": "ell_d10_k1e4_aligned", "rotated": "ell_d10_k1e4_rotated",
              "replicate": "ell_d10_k1e4_aligned_rep"}
-    fig, ax = plt.subplots(1, 2, figsize=(7.5, 3.0))
+    fig, ax = plt.subplots(1, 2, figsize=(W, 2.8))
     for i, (lab, mark) in enumerate((("aligned", "o"), ("rotated", "s"))):
         for j, m in enumerate(methods):
             x = t.loc[probs[lab]][m].dropna().to_numpy()
@@ -78,10 +81,10 @@ def fig1_e2_primary():
         sob = np.median(t.loc[probs[lab]]["sobol"].dropna())
         ax[0].axhline(sob, color=COLORS["sobol"], ls=ls, lw=1, label=f"Sobol {lab}")
         number(f"gapmedsobol{lab}", sob)
-    ax[0].set_xticks(range(len(methods)), [LABELS[m] for m in methods], rotation=30, fontsize=7)
+    ax[0].set_xticks(range(len(methods)), [LABELS[m] for m in methods], rotation=30, fontsize=6.5)
     ax[0].set_ylabel(f"median log$_{{10}}$ gap at n={n} (IQR)")
     ax[0].legend(fontsize=6)
-    ax[0].set_title("(a) final gap: filled = aligned, open = rotated", fontsize=8)
+    ax[0].set_title("(a) final gap: filled = aligned, open = rotated")
 
     allm = methods + ["sobol"]
     for j, m in enumerate(allm):
@@ -93,9 +96,9 @@ def fig1_e2_primary():
                            mfc=COLORS[m] if k == 0 else "white", capsize=2, ms=4)
             number(f"drot{m.replace('_', '')}{other}", ci_str(med, lo, hi), "{}")
     ax[1].axhline(0, color="k", lw=0.6)
-    ax[1].set_xticks(range(len(allm)), [LABELS[m] for m in allm], rotation=30, fontsize=7)
+    ax[1].set_xticks(range(len(allm)), [LABELS[m] for m in allm], rotation=30, fontsize=6.5)
     ax[1].set_ylabel(r"$\Delta$ vs aligned (log$_{10}$ gap)")
-    ax[1].set_title("(b) circle: rotated; square: aligned replicate (noise floor)", fontsize=8)
+    ax[1].set_title("(b) circle: rotated; square: aligned replicate")
     for name, (a_, b_) in {"interactionBO": ("bo_ard", "bo_iso"), "interactionCMA": ("sep_cma", "cma")}.items():
         d = ((t.loc[probs["rotated"]][a_] - t.loc[probs["aligned"]][a_])
              - (t.loc[probs["rotated"]][b_] - t.loc[probs["aligned"]][b_])).dropna().to_numpy()
@@ -119,77 +122,92 @@ def _checkpoint_table(df, method):
     return pd.DataFrame(rows)
 
 
+def _band(ax, tab, prob, key, color, ls, label, marker="o"):
+    """Median across seeds with an IQR band (25th to 75th percentile over seeds) at each checkpoint."""
+    g = tab[tab.problem == prob].groupby("n")[key]
+    q1, med, q3 = g.quantile(0.25), g.median(), g.quantile(0.75)
+    ax.fill_between(med.index, q1.values, q3.values, color=color, alpha=0.18, lw=0)
+    ax.plot(med.index, med.values, ls, color=color, marker=marker, ms=2.5, label=label)
+
+
 def fig2_e2_lowdim():
-    """Low effective dimension: convergence, relevance ratio and GP rank correlation."""
+    """Low effective dimension: convergence, relevance ratio and GP rank correlation (bands: IQR over 20 seeds)."""
     if not have("e2_lowdim"):
         SKIPPED.append("fig2 (e2_lowdim not run)")
         return
     df = load_results("e2_lowdim")
     n_final = int(df["budget"].max())
-    fig, ax = plt.subplots(1, 3, figsize=(7.5, 2.6))
-    style = {"lowdim_d20_deff2_aligned": "-", "lowdim_d20_deff2_rotated": "--"}
+    fig, ax = plt.subplots(1, 3, figsize=(W, 2.5))
+    probs = {"lowdim_d20_deff2_aligned": ("-", "aligned"), "lowdim_d20_deff2_rotated": ("--", "rotated")}
     ns = np.unique(np.linspace(10, n_final, 40).astype(int))
     for m in ("bo_ard", "bo_iso", "cma", "sobol", "turbo"):
-        for prob, ls in style.items():
+        for prob, (ls, lab) in probs.items():
             sub = df[(df.method == m) & (df.problem == prob)]
             if sub.empty:
                 continue
             med = [np.median([log_gap(F, fs, n) for F, fs in zip(sub.F, sub.f_star)]) for n in ns]
-            ax[0].plot(ns, med, ls, color=COLORS[m], label=f"{LABELS[m]} {'aligned' if ls == '-' else 'rotated'}")
+            ax[0].plot(ns, med, ls, color=COLORS[m], label=f"{LABELS[m]} {lab}")
     ax[0].set_xlabel("evaluations")
     ax[0].set_ylabel("median log$_{10}$ gap")
-    ax[0].legend(fontsize=4.5, ncol=2, loc="upper right")
-    ax[0].set_title("(a)", fontsize=8)
+    ax[0].set_ylim(-7.5, 3.6)                                  # headroom so the legend hides no curve
+    ax[0].legend(ncol=2, loc="upper right", fontsize=5.5, handlelength=1.6, columnspacing=0.8)
+    ax[0].set_title("(a) convergence (median)")
     ard = _checkpoint_table(df, "bo_ard")
     iso = _checkpoint_table(df, "bo_iso")
-    for prob, ls in style.items():
-        for tab, key, a in ((ard, "rho", ax[1]), (ard, "rank_corr", ax[2])):
-            s = tab[tab.problem == prob].groupby("n")[key].median()
-            a.plot(s.index, s.values, ls, color=COLORS["bo_ard"], marker="o", ms=3)
-        s = iso[iso.problem == prob].groupby("n")["rank_corr"].median()
-        ax[2].plot(s.index, s.values, ls, color=COLORS["bo_iso"], marker="o", ms=3)
-    ax[1].axhline(2 / 20, color="k", lw=0.6, ls=":")
-    ax[1].set_title("(b) relevance ratio $\\rho$ (dotted: $d_{eff}/d$)", fontsize=8)
-    ax[2].set_title("(c) GP rank correlation", fontsize=8)
-    for a in ax[1:]:
-        a.set_xlabel("n")
+    for prob, (ls, lab) in probs.items():
+        _band(ax[1], ard, prob, "rho", COLORS["bo_ard"], ls, f"ARD-BO, {lab}")
+        _band(ax[2], ard, prob, "rank_corr", COLORS["bo_ard"], ls, f"ARD-BO, {lab}")
+        _band(ax[2], iso, prob, "rank_corr", COLORS["bo_iso"], ls, f"iso-BO, {lab}")
+    ax[1].axhline(2 / 20, color="k", lw=0.7, ls=":", label="isotropic value $d_{eff}/d$")
+    ax[1].set_ylabel(r"relevance ratio $\rho$")
+    ax[1].legend(loc="center right", fontsize=6)
+    ax[1].set_title("(b) $\\rho$ (median, IQR band)")
+    ax[2].set_ylabel("Spearman rank correlation")
+    ax[2].legend(loc="lower right", fontsize=6)
+    ax[2].set_title("(c) GP rank correlation (median, IQR band)")
+    for a_ in ax[1:]:
+        a_.set_xlabel("evaluations n")
     fig.tight_layout()
     fig.savefig(FIG / "fig2_e2_lowdim.pdf", metadata={"CreationDate": None})
     plt.close(fig)
     if not ard.empty:
         for prob, tag in (("lowdim_d20_deff2_aligned", "aligned"), ("lowdim_d20_deff2_rotated", "rotated")):
-            s = ard[(ard.problem == prob) & (ard.n == 200)]
-            if len(s):
-                number(f"rhoNtwohundred{tag}".replace("N", "n"), float(s.rho.median()))
-                number(f"rankcorrntwohundred{tag}", float(s.rank_corr.median()))
+            s_ = ard[(ard.problem == prob) & (ard.n == 200)]
+            if len(s_):
+                number(f"rhontwohundred{tag}", float(s_.rho.median()))
+                number(f"rankcorrntwohundred{tag}", float(s_.rank_corr.median()))
 
 
-def fig3_e1_h5():
-    """(a) regime map, (b) the H1 statistic D(d) at both kappa, (c) CMA-ES learning time against d."""
-    exps = [e for e in ("e1_d2", "e1_d3", "e1_d5", "e1_d8", "e1_d10") if have(e)]
-    h5 = csv("h5_learning_time.csv")
-    if not exps and h5 is None:
-        SKIPPED.append("fig3 (e1 and h5 not run)")
-        return
-    fig, ax = plt.subplots(1, 3, figsize=(7.5, 2.7))
+def _regime_panel(ax, exps, prob, title):
     cmap = plt.get_cmap("viridis")
     for i, e in enumerate(exps):
         df = load_results(e)
         d = int(e.split("_d")[1])
         N = int(df["budget"].max())
         grid = np.unique(np.linspace(2 * d, N, 25).astype(int))
-        for prob, ls in (("ell_k100_rotated", "-"), ("rosenbrock", "--")):
-            sub = df[df.problem == prob]
-            diffs = [np.median((gap_table(sub, n)["bo_ard"] - gap_table(sub, n)["cma"]).dropna()) for n in grid]
-            ax[0].plot(grid / d, diffs, ls, color=cmap(i / max(len(exps) - 1, 1)), lw=1,
-                       label=f"d={d}" if ls == "-" else None)
-    ax[0].axhline(0, color="k", lw=0.6)
-    ax[0].set_xlabel("evaluations / d")
-    ax[0].set_ylabel("median (BO $-$ CMA-ES) log$_{10}$ gap", fontsize=7)
-    ax[0].legend(fontsize=5)
-    ax[0].set_title("(a) regime map (solid ellipsoid, dashed Rosenbrock)", fontsize=7)
+        sub = df[df.problem == prob]
+        diffs = [np.median((gap_table(sub, n)["bo_ard"] - gap_table(sub, n)["cma"]).dropna()) for n in grid]
+        ax.plot(grid / d, diffs, color=cmap(i / max(len(exps) - 1, 1)), label=f"d={d}")
+    ax.axhline(0, color="k", lw=0.6)
+    ax.set_xlabel("evaluations / d")
+    ax.set_ylabel("median (BO $-$ CMA-ES) log$_{10}$ gap")
+    ax.set_title(title)
+
+
+def fig3_e1_h5():
+    """(a, b) regime maps, (c) the H1 statistic D(d) at both kappa, (d) CMA-ES learning time against d."""
+    exps = [e for e in ("e1_d2", "e1_d3", "e1_d5", "e1_d8", "e1_d10") if have(e)]
+    h5 = csv("h5_learning_time.csv")
+    if not exps and h5 is None:
+        SKIPPED.append("fig3 (e1 and h5 not run)")
+        return
+    fig, ax = plt.subplots(2, 2, figsize=(W, 5.2))
+    _regime_panel(ax[0, 0], exps, "ell_k100_rotated", "(a) regime map: ellipsoid, $\\kappa=100$")
+    ax[0, 0].legend(loc="lower right", ncol=2)
+    _regime_panel(ax[0, 1], exps, "rosenbrock", "(b) regime map: Rosenbrock")
 
     h1, k4 = csv("e1_h1.csv"), csv("e1_kappa1e4_h1.csv")
+    axc = ax[1, 0]
     if h1 is not None:
         series = []
         for prob, lab, col, mark in (("ell_k100_rotated", "ellipsoid $\\kappa$=100", "#1f77b4", "o"),
@@ -211,13 +229,14 @@ def fig3_e1_h5():
             for _, rr in r.iterrows():
                 number(f"HoneKfourD{WORD[int(rr.d)]}", ci_str(rr.estimate, rr.ci_lo, rr.ci_hi), "{}")
         for k, (lab, col, mark, x, y, lo, hi) in enumerate(series):
-            ax[1].errorbar(x + (k - 1) * 0.12, y, yerr=[y - lo, hi - y], fmt=mark + "-", color=col, ms=3, lw=0.8,
-                           capsize=2, label=lab)
-        ax[1].axhline(0, color="k", lw=0.6)
-        ax[1].set_xlabel("d")
-        ax[1].set_ylabel("D(d), 20 evaluations per dimension", fontsize=7)
-        ax[1].legend(fontsize=5)
-        ax[1].set_title("(b) H1 statistic (negative = BO ahead)", fontsize=7)
+            axc.errorbar(x + (k - 1) * 0.12, y, yerr=[y - lo, hi - y], fmt=mark + "-", color=col, ms=3, lw=0.8,
+                         capsize=2, label=lab)
+        axc.axhline(0, color="k", lw=0.6)
+        axc.set_xticks([2, 3, 5, 8, 10], ["2", "3", "5", "8", "10"])
+        axc.set_xlabel("$d$")
+        axc.set_ylabel("D(d) at 20 evaluations per dimension")
+        axc.legend(loc="lower right")
+        axc.set_title("(c) H1 statistic D(d) (BO $-$ CMA-ES, 95% CI)")
     h4 = csv("e1_h4.csv")
     if h4 is not None:
         for _, r in h4[h4.source.str.startswith("own")].iterrows():
@@ -237,24 +256,54 @@ def fig3_e1_h5():
         for _, r in oh[oh.method == "bo_ard"].iterrows():
             number(f"overheadboard{PROB_WORD[r.problem]}{WORD[int(r.d)]}", float(r.median_overhead_s_per_eval))
     if h5 is not None:
-        t = h5[(h5.tau == 10) & h5["T"].notna()]
-        g = t.groupby("d")["T"]
-        ax[2].errorbar(g.median().index, g.median().values,
-                       yerr=[g.median() - g.quantile(0.25), g.quantile(0.75) - g.median()], fmt="o", ms=3)
-        a = csv("h5_alpha.csv")
-        for _, r in a[a.tau == 10].iterrows():
-            tag = "all" if r.fit == "all d" else "dge10"
-            number(f"alpha{tag}".replace("dge10", "dgeten"), ci_str(r.alpha, r.ci_lo, r.ci_hi), "{}")
-        ax[2].set_xscale("log")
-        ax[2].set_yscale("log")
-        ax[2].minorticks_off()
-        ax[2].set_xticks([2, 5, 10, 20, 40, 80], ["2", "5", "10", "20", "40", "80"], fontsize=6)
-        ax[2].set_xlabel("d")
-        ax[2].set_ylabel("evaluations to $\\kappa_t<10$", fontsize=7)
-        ax[2].set_title("(c) CMA-ES learning time", fontsize=7)
+        _h5_panel(ax[1, 1], h5)
     fig.tight_layout()
     fig.savefig(FIG / "fig3_e1_h5.pdf", metadata={"CreationDate": None})
     plt.close(fig)
+
+
+def _h5_panel(ax, h5):
+    """CMA-ES learning time T (evaluations to kappa_t < 10) against d with the fitted and the predicted slopes."""
+    t10 = h5[h5.tau == 10]
+    t = t10[t10["T"].notna()]
+    g = t.groupby("d")["T"]
+    med = g.median()
+    ax.errorbar(med.index, med.values, yerr=[med - g.quantile(0.25), g.quantile(0.75) - med], fmt="o", ms=3,
+                color="k", capsize=1.5, label="median, IQR (runs with $T$)", zorder=3)
+    a = csv("h5_alpha.csv")
+    fits = {}
+    for dmin, ls, col, name, tag in ((0, "-", "#1f77b4", "fit, all $d$", "all"), (10, "--", "#ff7f0e", "fit, $d\\geq10$", "dgeten")):
+        sub = t[t.d >= dmin]
+        x, y = np.log(sub.d.to_numpy(float)), np.log(sub["T"].to_numpy(float))
+        slope, icpt = np.polyfit(x, y, 1)
+        csv_alpha = a[(a.tau == 10) & (a.fit == ("all d" if dmin == 0 else "d >= 10"))].alpha.iloc[0]
+        assert abs(slope - csv_alpha) < 1e-6, (slope, csv_alpha)          # the plotted line is the fit in h5_alpha.csv
+        dd = np.array([2.0, 40.0]) if dmin == 0 else np.array([10.0, 40.0])     # each fit is drawn over the d it used
+        ax.plot(dd, np.exp(icpt) * dd ** slope, ls, color=col, lw=1.4, label=f"{name}: $\\hat\\alpha$={slope:.2f}", zorder=2)
+        if tag == "dgeten":
+            centre = (x.mean(), y.mean())                                        # centroid of the d >= 10 runs
+        row = a[(a.tau == 10) & (a.fit == ("all d" if dmin == 0 else "d >= 10"))].iloc[0]
+        number(f"alpha{tag}", ci_str(row.alpha, row.ci_lo, row.ci_hi), "{}")
+    xm, ym = centre
+    for slope, tag, col in ((1.71, "all", "#7f7f7f"), (1.87, "dgeten", "#2ca02c"), (2.0, "dgeten", "#d62728")):
+        dd = np.array([2.0, 40.0])
+        ax.plot(dd, np.exp(ym) * (dd / np.exp(xm)) ** slope, ":", color=col, lw=1.3,
+                label=f"predicted slope {slope:g}" + (" (all $d$)" if slope == 1.71 else (" (pre-registered, $d\\geq10$)" if slope == 1.87 else "")), zorder=1)
+    n_tot = t10.groupby("d").size()
+    n_T = g.size().reindex(n_tot.index, fill_value=0)
+    miss = n_tot[n_T < n_tot].index
+    lines = [f"$d$={d}: $T$ observed in {int(n_T[d])}/{int(n_tot[d])} runs" for d in miss]
+    ax.text(0.98, 0.03, "dotted: predicted slopes through the\ncentroid of the $d\\geq10$ runs\n\nno $T$ (machine precision first):\n" + "\n".join(lines), transform=ax.transAxes, ha="right",
+            va="bottom", fontsize=6)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.minorticks_off()
+    ax.set_xticks([2, 5, 10, 20, 40], ["2", "5", "10", "20", "40"])
+    ax.set_xlim(1.7, 55)
+    ax.set_xlabel("$d$")
+    ax.set_ylabel("evaluations until $\\kappa_t<10$")
+    ax.set_title("(d) CMA-ES learning time, $\\tau=10$")
+    ax.legend(loc="upper left", fontsize=6)
 
 
 def fig4_e3():
@@ -265,7 +314,7 @@ def fig4_e3():
         return
     col = {"bo_logei": "#1f77b4", "bo_ucb": "#9467bd", "cma": "#d62728", "cma_ipop": "#8c564b", "sobol": "#7f7f7f"}
     lab = {"bo_logei": "ARD-BO LogEI", "bo_ucb": "ARD-BO UCB", "cma": "CMA-ES", "cma_ipop": "IPOP-CMA-ES", "sobol": "Sobol"}
-    fig, ax = plt.subplots(1, 2, figsize=(7.5, 2.8), sharey=True)
+    fig, ax = plt.subplots(1, 2, figsize=(W, 2.7), sharey=True)
     for a, src, title in ((ax[0], "short200", "(a) 200 evaluations"), (ax[1], "long2000", "(b) 2000 evaluations")):
         for m in col:
             r = s[(s.source == src) & (s.method == m)].sort_values("width")
@@ -276,11 +325,11 @@ def fig4_e3():
                        capsize=1.5, color=col[m], label=lab[m])
         a.set_xscale("log")
         a.minorticks_off()
-        a.set_xticks([0.0125, 0.025, 0.05, 0.1, 0.2], ["0.0125", "0.025", "0.05", "0.1", "0.2"], fontsize=6)
+        a.set_xticks([0.0125, 0.025, 0.05, 0.1, 0.2], ["0.0125", "0.025", "0.05", "0.1", "0.2"])
         a.set_xlabel("basin width $w$")
-        a.set_title(title, fontsize=8)
+        a.set_title(title)
     ax[0].set_ylabel("P(success)")
-    ax[0].legend(fontsize=5)
+    ax[0].legend(loc="upper left")
     fig.tight_layout()
     fig.savefig(FIG / "fig4_e3.pdf", metadata={"CreationDate": None})
     plt.close(fig)
@@ -307,29 +356,29 @@ def fig5_ablation():
         SKIPPED.append("fig5 (ablation not analysed)")
         return
     order = ["turbo (default)", "turbo_cubic_ard", "turbo_iso", "bo_ard (E2)", "bo_iso (E2)", "sobol (E2)"]
-    nice = {"turbo (default)": "TuRBO\n(ARD box)", "turbo_cubic_ard": "TuRBO\nARD, cube", "turbo_iso": "TuRBO\niso, cube",
-            "bo_ard (E2)": "ARD-BO", "bo_iso (E2)": "iso-BO", "sobol (E2)": "Sobol"}
+    nice = {"turbo (default)": "TuRBO (ARD-scaled region)", "turbo_cubic_ard": "TuRBO (ARD kernel, cubic region)",
+            "turbo_iso": "TuRBO (iso kernel, cubic region)", "bo_ard (E2)": "ARD-BO", "bo_iso (E2)": "iso-BO", "sobol (E2)": "Sobol"}
     tt = t.set_index("method").loc[order]
-    fig, ax = plt.subplots(1, 2, figsize=(7.5, 3.0))
+    fig, ax = plt.subplots(1, 2, figsize=(W, 3.5))
     x = np.arange(len(order))
     for off, lab, mark, fill in ((-0.15, "aligned", "o", True), (0.15, "rotated", "s", False)):
         med = tt[f"median_{lab}"].to_numpy()
         ax[0].errorbar(x + off, med, yerr=[med - tt[f"q1_{lab}"].to_numpy(), tt[f"q3_{lab}"].to_numpy() - med],
                        fmt=mark, color="#1f77b4" if fill else "#d62728", mfc=None if fill else "white", ms=4, capsize=2,
                        label=lab)
-    ax[0].set_xticks(x, [nice[o] for o in order], fontsize=6)
+    ax[0].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
     ax[0].set_ylabel("median log$_{10}$ gap at n=500 (IQR)")
-    ax[0].legend(fontsize=6)
-    ax[0].set_title("(a) final gap", fontsize=8)
+    ax[0].legend()
+    ax[0].set_title("(a) final gap at n=500 (median, IQR)")
     for off, key, lab, mark in ((-0.15, "delta_rot", "$\\Delta_{rot}$", "o"), (0.15, "noise_floor", "noise floor", "s")):
         y = tt[key].to_numpy()
         ax[1].errorbar(x + off, y, yerr=[y - tt[f"{key}_lo"].to_numpy(), tt[f"{key}_hi"].to_numpy() - y], fmt=mark,
                        mfc=None if mark == "o" else "white", ms=4, capsize=2, label=lab, color="#2ca02c" if mark == "o" else "k")
     ax[1].axhline(0, color="k", lw=0.6)
-    ax[1].set_xticks(x, [nice[o] for o in order], fontsize=6)
+    ax[1].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
     ax[1].set_ylabel("log$_{10}$ gap difference")
-    ax[1].legend(fontsize=6)
-    ax[1].set_title("(b) rotation penalty and aligned-replicate floor", fontsize=8)
+    ax[1].legend()
+    ax[1].set_title("(b) rotation penalty and noise floor")
     fig.tight_layout()
     fig.savefig(FIG / "fig5_ablation.pdf", metadata={"CreationDate": None})
     plt.close(fig)
