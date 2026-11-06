@@ -1,0 +1,14 @@
+experiment,problem,target,seed,cma_final_gap,cma_n_evals,cma_cause,bo_final_gap,bo_reaches_0.1,bo_reaches_0.01,bo_reaches_0.0001
+e1_d5,rosenbrock,own,7.0,3.930839434133053,1968.0,terminated,1.0200774791389737,False,False,False
+e1_d5,rosenbrock,0.1,7.0,3.930839434133053,1968.0,terminated,1.0200774791389737,False,False,False
+e1_d5,rosenbrock,0.01,7.0,3.930839434133053,1968.0,terminated,1.0200774791389737,False,False,False
+e1_d5,rosenbrock,0.0001,7.0,3.930839434133053,1968.0,terminated,1.0200774791389737,False,False,False
+e1_d8,rosenbrock,0.1,12.0,3.9858877695995627,4340.0,terminated,83.56911187093039,False,False,False
+e1_d8,rosenbrock,0.1,17.0,3.9858877695995054,4880.0,terminated,9.495226374448842,False,False,False
+e1_d8,rosenbrock,0.01,12.0,3.9858877695995627,4340.0,terminated,83.56911187093039,False,False,False
+e1_d8,rosenbrock,0.01,17.0,3.9858877695995054,4880.0,terminated,9.495226374448842,False,False,False
+e1_d8,rosenbrock,0.0001,12.0,3.9858877695995627,4340.0,terminated,83.56911187093039,False,False,False
+e1_d8,rosenbrock,0.0001,17.0,3.9858877695995054,4880.0,terminated,9.495226374448842,False,False,False
+e1_d10,rosenbrock,0.1,1.0,3.986579112347193,6090.0,terminated,71.871526764744,False,False,False
+e1_d10,rosenbrock,0.01,1.0,3.986579112347193,6090.0,terminated,71.871526764744,False,False,False
+e1_d10,rosenbrock,0.0001,1.0,3.986579112347193,6090.0,terminated,71.871526764744,False,False,False

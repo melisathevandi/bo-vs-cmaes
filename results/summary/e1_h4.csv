@@ -1,0 +1,5 @@
+source,problem,median_c_star_by_N,defined_seeds_by_N,spearman_c_star_vs_N,sign
+own target (per seed),ell_k100_rotated,200:0.986;200:0.804;400:1.388;640:5.772;1000:59.850,16;19;19;19;17,0.974679,increases
+own target (per seed),rosenbrock,200:0.475;200:0.333;400:3.394;640:7.812;1000:48.539,19;19;15;7;1,0.974679,increases
+median target,ell_k100_rotated,200:1.139;200:0.838;400:0.787;640:4.732;1000:14.576,9;10;10;10;9,0.666886,increases
+median target,rosenbrock,200:0.372;200:0.203;400:2.053;640:4.094;1000:28.777,9;10;5;6;4,0.974679,increases

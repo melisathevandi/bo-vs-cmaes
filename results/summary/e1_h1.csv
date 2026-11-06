@@ -1,0 +1,13 @@
+problem,statistic,estimate,ci_lo,ci_hi,verdict_rule
+ell_k100_rotated,D(d=2),-2.352364,-3.116747,-1.497657,
+ell_k100_rotated,D(d=3),-2.891478,-3.418429,-2.606634,
+ell_k100_rotated,D(d=5),-2.983718,-3.149206,-2.613055,
+ell_k100_rotated,D(d=8),-2.366839,-2.593215,-2.041788,
+ell_k100_rotated,D(d=10),-2.013357,-2.214085,-1.883988,
+ell_k100_rotated,S=D(10)-D(2),0.339007,-0.550567,1.139462,0<S<0.5: direction only
+rosenbrock,D(d=2),-1.475177,-1.956251,-1.070088,
+rosenbrock,D(d=3),-1.503321,-1.719583,-0.863638,
+rosenbrock,D(d=5),-0.984136,-1.246053,-0.761235,
+rosenbrock,D(d=8),-0.655178,-1.01704,-0.531469,
+rosenbrock,D(d=10),-0.824691,-1.120666,-0.485537,
+rosenbrock,S=D(10)-D(2),0.650485,0.034773,1.218549,S>=0.5: size supported
