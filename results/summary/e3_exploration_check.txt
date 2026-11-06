@@ -1,0 +1,3 @@
+UCB beta=4 (weight sqrt(beta)=2): success 0.17, post-init fraction within 0.1 of decoy centre 0.82, median nearest-neighbour distance 0.0004
+UCB beta=100 (weight sqrt(beta)=10): success 0.33, post-init fraction within 0.1 of decoy centre 0.64, median nearest-neighbour distance 0.0022
+UCB beta=10000 (weight sqrt(beta)=100): success 0.67, post-init fraction within 0.1 of decoy centre 0.21, median nearest-neighbour distance 0.0791

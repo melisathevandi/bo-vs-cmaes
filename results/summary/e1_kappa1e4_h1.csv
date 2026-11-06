@@ -1,0 +1,11 @@
+statistic,d,n,n_seeds,estimate,ci_lo,ci_hi,bo_win_rate,verdict_rule
+D(d=2) at 10 evaluations per dimension,2.0,20.0,20.0,-1.739611,-2.231622,-0.927314,1.0,
+D(d=2) at 20 evaluations per dimension,2.0,40.0,20.0,-1.754724,-2.121992,-1.37645,0.95,
+D(d=2) at 40 evaluations per dimension,2.0,80.0,20.0,-1.333812,-1.565448,-0.949955,0.95,
+D(d=5) at 10 evaluations per dimension,5.0,50.0,20.0,-0.968412,-1.046065,-0.67498,0.95,
+D(d=5) at 20 evaluations per dimension,5.0,100.0,20.0,-1.495539,-1.695786,-0.927343,1.0,
+D(d=5) at 40 evaluations per dimension,5.0,200.0,20.0,-1.078875,-1.60735,-0.853377,1.0,
+D(d=10) at 10 evaluations per dimension,10.0,100.0,30.0,-0.440937,-0.598805,-0.398464,0.966667,
+D(d=10) at 20 evaluations per dimension,10.0,200.0,30.0,-0.856791,-0.98536,-0.741052,0.933333,
+D(d=10) at 40 evaluations per dimension,10.0,400.0,30.0,-1.178159,-1.397495,-1.055609,1.0,
+S=D(10)-D(2) at 20 evaluations per dimension,,,,0.897933,0.438219,1.345285,,S>=0.5: size supported
