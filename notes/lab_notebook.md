@@ -303,3 +303,8 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - Open: `results/raw` (3.7 GB) is not tracked, so a clone cannot re-run the analyses without it; decision pending. Appendix tables
   (sensitivity, A4, anchor, E0, CMA-ES long runs, E3 sanity) are not generated yet; their source CSVs are listed in `report.tex`.
 
+
+## 2026-11-07 figure fixes
+- Figs 2, 3, 5 (58f8465, 8c94df3): legends, IQR bands, split regime panels, fitted and predicted slopes, renamed TuRBO variants, 6.5 inch sizing.
+- Second round: Fig 2 has one shared legend above the three panels (colour = method, line style = instance, dotted = isotropic value, band = IQR). Fig 3(d): the 1.71 line is anchored at the all-d centroid, the 1.87 and 2 lines at the d >= 10 centroid (each drawn over the d of its fit); the legend says which centroid. The caption must say this too. Fig 5 uses the method colours of Figs 1 and 2 (the three TuRBO variants share the TuRBO colour, told apart by the axis labels); filled = aligned or Delta_rot, open = rotated or noise floor.
+- Figure PDFs only; no number changed (122 macros).

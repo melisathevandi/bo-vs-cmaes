@@ -149,9 +149,7 @@ def fig2_e2_lowdim():
             ax[0].plot(ns, med, ls, color=COLORS[m], label=f"{LABELS[m]} {lab}")
     ax[0].set_xlabel("evaluations")
     ax[0].set_ylabel("median log$_{10}$ gap")
-    ax[0].set_ylim(-7.5, 3.6)                                  # headroom so the legend hides no curve
-    ax[0].legend(ncol=2, loc="upper right", fontsize=5.5, handlelength=1.6, columnspacing=0.8)
-    ax[0].set_title("(a) convergence (median)")
+    ax[0].set_title("(a) convergence")
     ard = _checkpoint_table(df, "bo_ard")
     iso = _checkpoint_table(df, "bo_iso")
     for prob, (ls, lab) in probs.items():
@@ -160,14 +158,25 @@ def fig2_e2_lowdim():
         _band(ax[2], iso, prob, "rank_corr", COLORS["bo_iso"], ls, f"iso-BO, {lab}")
     ax[1].axhline(2 / 20, color="k", lw=0.7, ls=":", label="isotropic value $d_{eff}/d$")
     ax[1].set_ylabel(r"relevance ratio $\rho$")
-    ax[1].legend(loc="center right", fontsize=6)
-    ax[1].set_title("(b) $\\rho$ (median, IQR band)")
+    ax[1].set_title("(b) relevance ratio $\\rho$")
     ax[2].set_ylabel("Spearman rank correlation")
-    ax[2].legend(loc="lower right", fontsize=6)
-    ax[2].set_title("(c) GP rank correlation (median, IQR band)")
+    ax[2].set_title("(c) GP rank correlation")
     for a_ in ax[1:]:
         a_.set_xlabel("evaluations n")
-    fig.tight_layout()
+    # one shared legend above the panels: colour = method, line style = instance, dotted = isotropic value in (b)
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], color=COLORS[m], lw=1.5) for m in ("bo_ard", "bo_iso", "cma", "turbo", "sobol")]
+    names = [LABELS[m] for m in ("bo_ard", "bo_iso", "cma", "turbo", "sobol")]
+    handles += [Line2D([], [], color="k", ls="-"), Line2D([], [], color="k", ls="--"), Line2D([], [], color="k", ls=":", lw=0.7)]
+    names += ["aligned", "rotated", "isotropic value $d_{eff}/d$ (b)"]
+    from matplotlib.patches import Patch
+    handles.append(Patch(color="0.5", alpha=0.3, lw=0))
+    names.append("IQR over seeds (b, c)")
+    order_ = [0, 5, 1, 6, 2, 7, 3, 8, 4, None]            # matplotlib fills columns first: methods on row 1, line styles on row 2
+    handles = [handles[i] if i is not None else Line2D([], [], alpha=0) for i in order_]
+    names = [names[i] if i is not None else "" for i in order_]
+    fig.legend(handles, names, loc="upper center", ncol=5, frameon=False, fontsize=6, handlelength=1.8, columnspacing=1.0)
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
     fig.savefig(FIG / "fig2_e2_lowdim.pdf", metadata={"CreationDate": None})
     plt.close(fig)
     if not ard.empty:
@@ -271,7 +280,7 @@ def _h5_panel(ax, h5):
     ax.errorbar(med.index, med.values, yerr=[med - g.quantile(0.25), g.quantile(0.75) - med], fmt="o", ms=3,
                 color="k", capsize=1.5, label="median, IQR (runs with $T$)", zorder=3)
     a = csv("h5_alpha.csv")
-    fits = {}
+    centre = {}
     for dmin, ls, col, name, tag in ((0, "-", "#1f77b4", "fit, all $d$", "all"), (10, "--", "#ff7f0e", "fit, $d\\geq10$", "dgeten")):
         sub = t[t.d >= dmin]
         x, y = np.log(sub.d.to_numpy(float)), np.log(sub["T"].to_numpy(float))
@@ -280,20 +289,20 @@ def _h5_panel(ax, h5):
         assert abs(slope - csv_alpha) < 1e-6, (slope, csv_alpha)          # the plotted line is the fit in h5_alpha.csv
         dd = np.array([2.0, 40.0]) if dmin == 0 else np.array([10.0, 40.0])     # each fit is drawn over the d it used
         ax.plot(dd, np.exp(icpt) * dd ** slope, ls, color=col, lw=1.4, label=f"{name}: $\\hat\\alpha$={slope:.2f}", zorder=2)
-        if tag == "dgeten":
-            centre = (x.mean(), y.mean())                                        # centroid of the d >= 10 runs
+        centre[tag] = (x.mean(), y.mean())                                       # centroid of the runs used by this fit
         row = a[(a.tau == 10) & (a.fit == ("all d" if dmin == 0 else "d >= 10"))].iloc[0]
         number(f"alpha{tag}", ci_str(row.alpha, row.ci_lo, row.ci_hi), "{}")
-    xm, ym = centre
+    # 1.71 is the prediction for the all-d fit (anchored at the all-d centroid); 1.87 and 2 are for d >= 10 (d >= 10 centroid)
     for slope, tag, col in ((1.71, "all", "#7f7f7f"), (1.87, "dgeten", "#2ca02c"), (2.0, "dgeten", "#d62728")):
-        dd = np.array([2.0, 40.0])
+        xm, ym = centre[tag]
+        dd = np.array([2.0, 40.0]) if tag == "all" else np.array([10.0, 40.0])
         ax.plot(dd, np.exp(ym) * (dd / np.exp(xm)) ** slope, ":", color=col, lw=1.3,
-                label=f"predicted slope {slope:g}" + (" (all $d$)" if slope == 1.71 else (" (pre-registered, $d\\geq10$)" if slope == 1.87 else "")), zorder=1)
+                label=f"predicted {slope:g}, " + ("all-$d$ centroid" if tag == "all" else "$d\\geq10$ centroid"), zorder=1)
     n_tot = t10.groupby("d").size()
     n_T = g.size().reindex(n_tot.index, fill_value=0)
     miss = n_tot[n_T < n_tot].index
     lines = [f"$d$={d}: $T$ observed in {int(n_T[d])}/{int(n_tot[d])} runs" for d in miss]
-    ax.text(0.98, 0.03, "dotted: predicted slopes through the\ncentroid of the $d\\geq10$ runs\n\nno $T$ (machine precision first):\n" + "\n".join(lines), transform=ax.transAxes, ha="right",
+    ax.text(0.98, 0.03, "no $T$ (machine precision first):\n" + "\n".join(lines), transform=ax.transAxes, ha="right",
             va="bottom", fontsize=6)
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -303,7 +312,8 @@ def _h5_panel(ax, h5):
     ax.set_xlabel("$d$")
     ax.set_ylabel("evaluations until $\\kappa_t<10$")
     ax.set_title("(d) CMA-ES learning time, $\\tau=10$")
-    ax.legend(loc="upper left", fontsize=6)
+    ax.set_ylim(top=ax.get_ylim()[1] * 12)                        # headroom: the legend must not cover the data
+    ax.legend(loc="upper left", fontsize=5.5, ncol=2, columnspacing=0.8, handlelength=1.6)
 
 
 def fig4_e3():
@@ -361,23 +371,30 @@ def fig5_ablation():
     tt = t.set_index("method").loc[order]
     fig, ax = plt.subplots(1, 2, figsize=(W, 3.5))
     x = np.arange(len(order))
+    from matplotlib.lines import Line2D
+    mcol = {"turbo (default)": COLORS["turbo"], "turbo_cubic_ard": COLORS["turbo"], "turbo_iso": COLORS["turbo"],
+            "bo_ard (E2)": COLORS["bo_ard"], "bo_iso (E2)": COLORS["bo_iso"], "sobol (E2)": COLORS["sobol"]}   # as in Figs 1, 2
     for off, lab, mark, fill in ((-0.15, "aligned", "o", True), (0.15, "rotated", "s", False)):
-        med = tt[f"median_{lab}"].to_numpy()
-        ax[0].errorbar(x + off, med, yerr=[med - tt[f"q1_{lab}"].to_numpy(), tt[f"q3_{lab}"].to_numpy() - med],
-                       fmt=mark, color="#1f77b4" if fill else "#d62728", mfc=None if fill else "white", ms=4, capsize=2,
-                       label=lab)
+        for i, o in enumerate(order):
+            r = tt.loc[o]
+            med = r[f"median_{lab}"]
+            ax[0].errorbar(i + off, med, yerr=[[med - r[f"q1_{lab}"]], [r[f"q3_{lab}"] - med]], fmt=mark, color=mcol[o],
+                           mfc=mcol[o] if fill else "white", ms=4, capsize=2)
+    ax[0].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
+                 ["aligned (filled)", "rotated (open)"])
     ax[0].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
     ax[0].set_ylabel("median log$_{10}$ gap at n=500 (IQR)")
-    ax[0].legend()
     ax[0].set_title("(a) final gap at n=500 (median, IQR)")
-    for off, key, lab, mark in ((-0.15, "delta_rot", "$\\Delta_{rot}$", "o"), (0.15, "noise_floor", "noise floor", "s")):
-        y = tt[key].to_numpy()
-        ax[1].errorbar(x + off, y, yerr=[y - tt[f"{key}_lo"].to_numpy(), tt[f"{key}_hi"].to_numpy() - y], fmt=mark,
-                       mfc=None if mark == "o" else "white", ms=4, capsize=2, label=lab, color="#2ca02c" if mark == "o" else "k")
+    for off, key, mark in ((-0.15, "delta_rot", "o"), (0.15, "noise_floor", "s")):
+        for i, o in enumerate(order):
+            r = tt.loc[o]
+            ax[1].errorbar(i + off, r[key], yerr=[[r[key] - r[f"{key}_lo"]], [r[f"{key}_hi"] - r[key]]], fmt=mark, ms=4,
+                           capsize=2, color=mcol[o], mfc=mcol[o] if mark == "o" else "white")
+    ax[1].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
+                 ["$\\Delta_{rot}$ (filled)", "noise floor (open)"])
     ax[1].axhline(0, color="k", lw=0.6)
     ax[1].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
     ax[1].set_ylabel("log$_{10}$ gap difference")
-    ax[1].legend()
     ax[1].set_title("(b) rotation penalty and noise floor")
     fig.tight_layout()
     fig.savefig(FIG / "fig5_ablation.pdf", metadata={"CreationDate": None})
