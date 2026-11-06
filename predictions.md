@@ -99,3 +99,15 @@ shape does not explain TuRBO's excess penalty over ARD-BO).
 *Would refute (isotropic):* |Delta_rot| > 0.3 or a CI excluding 0.
 Both outcomes are reported whichever way they go. No aligned-replicate noise floor is run for the variants; the E2 replicate
 for default TuRBO is the only noise reference and this is stated as a limitation.
+
+## Amendments (dated; the text above is unchanged)
+
+### 2026-11-06: H1 is tested at kappa = 100, and its d = 20 part was not run
+- **kappa.** H1 above says kappa = 1e4 for the ellipsoid. The E1 configs (`configs/e1_d{2,3,5,8,10}.toml`, committed
+  2026-11-04 and run 2026-11-05/06) use the rotated ellipsoid with **kappa = 100**, and Rosenbrock. H1 is therefore tested
+  at kappa = 100 on the ellipsoid, not at kappa = 1e4. The 0.5-decade guess is unchanged and is applied to the kappa = 100
+  results. No E1 run at kappa = 1e4 exists.
+- **d = 20.** The sentence "At d=20 with 1000 evaluations (50 per dimension) BO is no longer ahead of CMA-ES" was **not
+  tested**: E1 d = 20 was not run (decision of 2026-11-06). The tested range is d = 2, 3, 5, 8, 10.
+- **When.** Written and committed before any E1 gap value or E1 result was analysed (see `analysis_addendum_e1.md`). The
+  statistic for the 0.5-decade guess is fixed there.
