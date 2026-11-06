@@ -21,6 +21,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 SUMMARY = ROOT / "results" / "summary"
 GEN = ROOT / "report" / "generated"
+ABL = {"turbo (default)": "TuRBO (ARD-scaled region)", "turbo_cubic_ard": "TuRBO (ARD kernel, cubic region)",
+       "turbo_iso": "TuRBO (iso kernel, cubic region)", "bo_ard (E2)": "ARD-BO", "bo_iso (E2)": "iso-BO", "sobol (E2)": "Sobol"}
 LABEL = {"bo_ard": "ARD-BO", "bo_iso": "iso-BO", "turbo": "TuRBO", "cma": "CMA-ES", "sep_cma": "sep-CMA-ES",
          "sobol": "Sobol", "cma_ipop": "IPOP-CMA-ES", "bo_logei": "ARD-BO (LogEI)", "bo_ucb": "ARD-BO (UCB)"}
 
@@ -110,7 +112,7 @@ def tab_ablation():
     t = csv("turbo_ablation.csv")
     rows = []
     for _, r in t.iterrows():
-        rows.append({"m": r.method.replace("_", "\\_"), "a": f"{r.median_aligned:.2f}", "r": f"{r.median_rotated:.2f}",
+        rows.append({"m": ABL.get(r.method, r.method), "a": f"{r.median_aligned:.2f}", "r": f"{r.median_rotated:.2f}",
                      "d": ci(r.delta_rot, r.delta_rot_lo, r.delta_rot_hi), "f": ci(r.noise_floor, r.noise_floor_lo, r.noise_floor_hi)})
     write("tab_ablation", tex(pd.DataFrame(rows), ["m", "a", "r", "d", "f"],
                               ["Method", "Aligned", "Rotated", "$\\Delta_{rot}$ [95\\% CI]", "Noise floor [95\\% CI]"], "lcccc"))
