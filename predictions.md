@@ -111,3 +111,14 @@ for default TuRBO is the only noise reference and this is stated as a limitation
   tested**: E1 d = 20 was not run (decision of 2026-11-06). The tested range is d = 2, 3, 5, 8, 10.
 - **When.** Written and committed before any E1 gap value or E1 result was analysed (see `analysis_addendum_e1.md`). The
   statistic for the 0.5-decade guess is fixed there.
+
+### 2026-11-06 (second amendment, before any ablation run): aligned-replicate noise floor for both variants
+The last sentence of the follow-up section above ("No aligned-replicate noise floor is run for the variants") is
+**superseded**. Both variants are also run on the aligned replicate used in E2 (`ell_d10_k1e4_aligned_rep`, instance seed
+offset 5000, seeds 0-29), 500 evaluations: 30 more runs per variant. The follow-up is then 3 problems x 30 seeds x 2 variants =
+180 new runs. For each variant, the noise floor is the paired difference (aligned replicate minus aligned) in median log10
+gap with its bootstrap CI, computed as for default TuRBO in the E2 analysis. Reading rule, fixed now: a variant's Delta_rot is
+interpreted against its own noise floor. If the floor's CI excludes 0 for a variant, that is reported next to its Delta_rot and
+the "near 0" criterion for the isotropic variant is judged on Delta_rot minus the floor as well as on Delta_rot. The thresholds
+and the predictions above are unchanged.
+
