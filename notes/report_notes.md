@@ -244,6 +244,14 @@ data, so no number below comes from it yet.
 - **Overhead** of ARD-BO (mean method seconds per evaluation over the run, ellipsoid): 0.79, 1.10, 1.87, 4.10, 10.65 s for
   d = 2, 3, 5, 8, 10 (`e1_overhead.csv`; 7 workers). CMA-ES is far below 1 ms.
 - Caveats: S for the ellipsoid has a CI containing 0. The E1 budgets differ per d, so the "final budget" rows mix d and budget.
+- **kappa = 1e4 supplement for H1** (added after the E1 analysis; `analysis_addendum_e1_kappa1e4.md`, 290b815): rotated ellipsoid,
+  d = 2 and 5 (20 seeds, E1 budgets 200 and 400, `e1k4_d2`, `e1k4_d5`; 240 runs, 7 workers, 20:05 to 21:07, all `code_dirty =
+  false`), d = 10 read from the E2 primary rotated ellipsoid (30 seeds, 500 evaluations) at n = 200. Source:
+  `e1_kappa1e4_h1.csv` (`analyze_e1_kappa1e4.py`, a0fffe1). D(d) at 20 evaluations per dimension: d = 2 -1.75 [-2.12, -1.38];
+  d = 5 -1.50 [-1.70, -0.93]; d = 10 -0.86 [-0.99, -0.74]. **S = D(10) - D(2) = +0.90 [0.44, 1.35]: meets the 0.5 guess, CI
+  excludes 0.** BO win rate against CMA-ES at 20 per dimension: 0.95, 1.00, 0.93. So H1 as written (kappa = 1e4) is supported on
+  three dimensions; at kappa = 100 only the Rosenbrock result reaches 0.5 (above). d = 3 and 8 were not run at kappa = 1e4, and
+  the d = 10 point has a different seed set and budget from d = 2, 5.
 
 ### E3 at d = 2 (run 6 Nov; design and statistics fixed in `analysis_addendum_e3.md`, bf2ae7c)
 - Decoy-basin function (`problems.decoy_basin`): success (f < 1) iff the point is within w of the narrow optimum. 5 widths x 30
@@ -262,6 +270,20 @@ data, so no number below comes from it yet.
 - **Descriptive:** at 200 evaluations BO is no better than Sobol at any width and significantly worse for w >= 0.025 (e.g.
   w = 0.05: LogEI minus Sobol -0.93 [-1.00, -0.83]). Sobol with 2000 points beats IPOP at every width (0.87 vs 0.10 at
   w = 0.0125). The claim about the initial-design spacing is not separable at d = 2 (stated in the addendum).
+
+- **E3 sanity check (is "BO no better than Sobol at 200 evaluations" an artefact?)** `e3_sanity.csv` (`code/e3_sanity.py`),
+  `e3_exploration_check.txt` (`code/e3_exploration_check.py`, a0fffe1). The runs record acq = logei / ucb, n_init = 4, 200
+  evaluations; UCB uses BoTorch's mean + sqrt(beta) sigma with beta = 4 (weight 2, in the units of -f), and its trajectories differ
+  from LogEI's for every (width, seed). Behaviour: after the initial design 94-98% of BO evaluations lie within 0.02 of the
+  broad-basin minimum for w <= 0.1 (LogEI 0.94, UCB 0.96; for w = 0.2 where the basin is found, 0.00), the median distance to
+  the nearest earlier point is about 0, every BO run ends at or below the decoy minimum plus 1e-3, and BO's few successes at w <= 0.1
+  come from the 4 initial points (successes 1 of 1 at w = 0.05, 3 of 3 at w = 0.1). BO trajectories at w <= 0.1 are the same
+  for every width because the narrow dip is never sampled. So BO behaves as a noiseless GP on a smooth bowl: it converges and
+  keeps resampling the bowl's minimum. This is consistent with the algorithm, not a bug. Check that the implementation can
+  explore: UCB with a larger weight (6 seeds, w = 0.1, seeds 1000-1005) moves from success 0.17 (weight 2) to 0.33 (weight 10) and
+  0.67 (weight 100), with the share of evaluations near the decoy centre falling from 0.82 to 0.64 to 0.21 and the nearest-neighbour
+  distance rising from 0.0004 to 0.08, i.e. it becomes space filling; Sobol succeeds in 1.00 at that width. Small sample (6 seeds),
+  a sanity check and not a pre-registered result.
 
 ### Follow-up: TuRBO rotation-penalty ablation (run 6 Nov; prediction in `predictions.md`, f65181c and b78a3f4)
 - Variants: ARD kernel with a cubic region, isotropic kernel (cubic region); default TuRBO = the E2 runs. 180 runs (30 seeds x
@@ -291,7 +313,7 @@ data, so no number below comes from it yet.
 ## 4. Prediction versus outcome (H1-H5)
 | Hypothesis | Prediction (frozen in `predictions.md`, ac4c90f) | Status |
 |---|---|---|
-| H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | ellipsoid S = +0.34 [-0.55, 1.14] (direction only), Rosenbrock S = +0.65 [0.03, 1.22] (meets 0.5); d = 20 not tested; tested at kappa = 100 (amendment 0363ee5); `e1_h1.csv`, 1fd7721 |
+| H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | kappa = 100: ellipsoid S = +0.34 [-0.55, 1.14] (direction only), Rosenbrock S = +0.65 [0.03, 1.22] (meets 0.5); kappa = 1e4 supplement (d = 2, 5, 10): S = +0.90 [0.44, 1.35] (meets 0.5); d = 20 not tested; `e1_h1.csv` 1fd7721, `e1_kappa1e4_h1.csv` a0fffe1 |
 | H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | CMA-ES part consistent with E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`). The prediction was informed by E0, so this is not an independent test. E2 runs bounded only, so the unbounded part rests on E0 alone. rho at n = 200: 0.998 aligned (threshold 0.5), 0.168 rotated (threshold 0.2), medians over 20 runs (`e2_lowdim_rho.csv`); the two interactions are positive with CIs excluding 0 (`e2_primary.csv`) |
 | H3 | P(success) falls with basin width; IPOP beats default CMA-ES at larger budgets; UCB beats LogEI on the narrowest basin | E3 at d = 2: success falls with width for every method (supported); IPOP beats CMA-ES at n = 2000, pooled +0.32 [0.25, 0.39] (supported); UCB vs LogEI at the narrowest width 0 vs 0 of 30 (not resolved); `e3_tests.csv`, 2a5baba |
 | H4 | c* increases with budget and with d | median c* rises with the budget on both problems (Spearman 0.67 to 0.97); never decreasing; c* defined for 1 of 20 seeds at d = 10 Rosenbrock; `e1_h4.csv`, 1fd7721 |

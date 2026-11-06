@@ -281,3 +281,14 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - E1 scripts were written outside `code/` while the ablation ran, then moved in (1fd7721); the rerun gave identical md5 for all
   7 output files.
 
+## 6 Nov (evening): kappa = 1e4 supplement, E3 sanity checks, figures
+- kappa = 1e4 supplement for H1: addendum 290b815 (states it was added after the E1 analysis), 240 runs at d = 2 and 5, 20:05 to
+  20:58, 7 workers, `code_dirty = false`. Before it I had seen the E2 primary results at n = 500 only, no n = 200 value.
+- E3 sanity checks and the exploration check ran on one core while the supplement ran (no `code/` edits during the runs: the
+  scripts were written in an untracked folder and moved in after the runs, a0fffe1). The exploration check's console output is
+  saved by hand in `results/summary/e3_exploration_check.txt`.
+- `code/make_figures.py` now builds Figures 1-5 (E2 primary, E2 low dimension, E1 regime map + H1 statistic + H5, E3, TuRBO
+  ablation) and `report/generated/numbers.tex` (102 macros) from `results/summary` and `results/raw`; two consecutive runs give
+  identical `numbers.tex`. Figures 2 and 3 were untested on real data before; the first renders had a legend over the data (Fig 2)
+  and crowded log-axis tick labels (Figs 3c, 4b), fixed. Fig 3(c) shows d <= 40 only (tau = 10 fits cover d <= 40).
+
