@@ -1,0 +1,7 @@
+item,value,ci_lo,ci_hi,met
+"cubic ARD: delta_rot in [0.45,1.25] and CI excludes 0",0.6033,0.4933,0.6891,True
+"cubic ARD - default: delta_rot contrast < 0, CI excludes 0",-0.957,-1.084,-0.6754,True
+cubic ARD prediction (both of the above),,,,True
+isotropic: |delta_rot| <= 0.3 and CI contains 0,0.0146,-0.0856,0.1468,True
+isotropic: delta_rot minus its noise floor (|.| <= 0.3),0.0082,,,True
+isotropic - cubic ARD: delta_rot contrast (reported),-0.5887,-0.7219,-0.4131,
