@@ -292,3 +292,14 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
   identical `numbers.tex`. Figures 2 and 3 were untested on real data before; the first renders had a legend over the data (Fig 2)
   and crowded log-axis tick labels (Figs 3c, 4b), fixed. Fig 3(c) shows d <= 40 only (tau = 10 fits cover d <= 40).
 
+## 6 Nov (night): report scaffolding and the clean-clone check
+- Added `code/make_tables.py` (7 tables from `results/summary`, outcome column evaluated from the pre-registered rules),
+  `report/report.tex` (headings and, per section, figures, tables and macro prefixes; no prose), `report/references.bib` (empty),
+  a rewritten `readme.md` (it still described the plan from 1 Nov), and `code/check_reproduction.py`.
+- The first version of the check could pass vacuously (a script that wrote nothing left the committed file in place). It now deletes
+  all derived files in the clone first. Result: all 17 steps run, no file differs from the committed one, all 122 macros are listed
+  in exactly one section, the skeleton compiles. Figures are saved without a creation date, so they compare byte for byte.
+- `.gitignore` no longer excludes `report/figures/` (the assignment requires the figures in `report/`); LaTeX build files are ignored.
+- Open: `results/raw` (3.7 GB) is not tracked, so a clone cannot re-run the analyses without it; decision pending. Appendix tables
+  (sensitivity, A4, anchor, E0, CMA-ES long runs, E3 sanity) are not generated yet; their source CSVs are listed in `report.tex`.
+
