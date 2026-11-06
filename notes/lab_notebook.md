@@ -263,3 +263,21 @@ Dated decisions, surprises, failed attempts. Newest at the bottom.
 - Result against the frozen prediction (`predictions.md`): the d >= 10 CI excludes 1.87, so the refutation criterion is met
   (see `notes/report_notes.md`, H5). The H5 records have no worker field; the log header says 7 workers.
 - Also on 5 Nov: rho and rank-correlation analysis of E2 low-effective dimension (`code/analyze_lowdim.py`).
+
+## 6 Nov: E1 finished, E1 long CMA-ES runs, E3 d=2, TuRBO ablation
+- E1 finished 6 Nov 05:19 (600 runs, 14.2 h at 7 workers, `done in 51270 s` for d = 10), no failures, all `code_dirty = false`.
+  An earlier ETA I gave at 00:39 (12:00 to 16:00) was too pessimistic because most of the first 56 d = 10 files were the cheap CMA-ES and
+  Sobol runs; BO runs took 1.9 to 2.8 h each.
+- E1 long CMA-ES runs (200 runs, 1 worker, 20 s in total): first 20 evaluations equal those of the E1 CMA-ES runs for all 200 pairs.
+- `analysis_addendum_e1.md` was committed (4680bb8) before any E1 gap value was computed; before it I had seen only file counts,
+  `code_dirty`/`workers` fields, per-job wall times and chain durations. `predictions.md` H1 says kappa = 1e4 but the E1 configs
+  use kappa = 100 (my oversight when writing the configs on 4 Nov; no recorded reason): dated amendment 0363ee5.
+- E3 d = 2 and TuRBO ablation: decisions and results in `notes/report_notes.md`. A 2-seed smoke test of E3 kept writing records
+  after I stopped it (orphaned workers); `results/raw/e3_d2_quick` was deleted, no real records were affected. I briefly put a new
+  test file under `code/` while E3 was running (moved out within about a minute; the 633 records written by then had `code_dirty = false`).
+- The first default-reproduction check of the TuRBO change failed on all 9 jobs because my check script used multithreaded torch
+  while the E2 runs were single-threaded; with one thread the 9 trajectories matched exactly. One test I wrote (volume of the
+  trust region) ignored clipping at the box edge and was corrected in the test, not in the code.
+- E1 scripts were written outside `code/` while the ablation ran, then moved in (1fd7721); the rerun gave identical md5 for all
+  7 output files.
+

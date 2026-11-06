@@ -217,18 +217,72 @@ data, so no number below comes from it yet.
   Rotation costs the axis-aligned methods (ARD-BO, sep-CMA-ES, TuRBO) about 0.8 to 1.6 decades and the rotation-insensitive
   ones little or nothing. Unbounded behaviour is not tested here (E0 only).
 
-### E1: dimension x budget (not yet run)
-- BO (ARD) vs CMA-ES vs Sobol on the rotated ellipsoid (kappa = 1e2) and Rosenbrock, d in {2, 3, 5, 8, 10},
-  budgets 200, 200, 400, 640, 1000, 20 seeds (`configs/e1_d*.toml`). Feeds H1, the regime map and the E4 table.
+### E1: dimension x budget (run 5-6 Nov; analysis as fixed in `analysis_addendum_e1.md`, 4680bb8)
+- BO (ARD) vs CMA-ES vs Sobol on the rotated ellipsoid (kappa = 1e2, not 1e4 as H1 says; see the amendment in
+  `predictions.md`, 0363ee5) and Rosenbrock, d in {2, 3, 5, 8, 10}, budgets 200, 200, 400, 640, 1000, 20 seeds
+  (`configs/e1_d*.toml`). 600 runs, 7 workers, all `code_dirty = false`; 5 Nov 11:07 to 6 Nov 05:19 (14.2 h; d = 10 alone 8.9 h).
+- Sources: `results/summary/e1_regime_map.csv`, `e1_h1.csv`, `e1_h4.csv`, `e1_cost_median_target.csv`, `e1_overhead.csv`,
+  `cost_table.csv`, `cost_censored.csv` (code `analyze_e1.py`, `cost_table.py`; 1fd7721; a rerun gives identical files).
+- **H1 statistic D(d)** = median paired log10 gap, ARD-BO minus CMA-ES, at 20 evaluations per dimension (negative = BO ahead):
+  ellipsoid -2.35, -2.89, -2.98, -2.37, -2.01 for d = 2, 3, 5, 8, 10; Rosenbrock -1.48, -1.50, -0.98, -0.66, -0.82.
+  S = D(10) - D(2): **ellipsoid +0.34 [-0.55, 1.14]** (direction only, below the 0.5 guess, CI contains 0);
+  **Rosenbrock +0.65 [0.03, 1.22]** (meets the 0.5 guess). BO leads at 20 evaluations per dimension at every d, and the lead
+  shrinks from d = 2 to d = 10 on both problems. The d = 20 part is not tested.
+- **Final budgets** (median BO - CMA-ES, 95% CI): ellipsoid d = 2 +0.94 [0.44, 1.52], d = 3 -0.72 [-1.30, 0.01], d = 5 -0.24
+  [-1.13, 0.31], d = 8 -0.66 [-1.28, -0.36], d = 10 -0.13 [-0.51, 0.10]; Rosenbrock d = 2 -1.06 [-1.44, 0.07], d = 3 -0.76
+  [-0.92, -0.31], d = 5 +0.03 [-0.19, 0.23], d = 8 +0.56 [0.26, 0.83], d = 10 +0.72 [0.58, 0.84]. On Rosenbrock CMA-ES is ahead at
+  the final budget from d = 8; on the ellipsoid the two are level at d = 10, and CMA-ES is ahead at d = 2 (200 evaluations).
+- **c\* (own target, per seed; CMA-ES side from the long runs), median [IQR] in s per evaluation, seeds with c\* defined:**
+  ellipsoid 0.99 [0.60, 3.05] (16), 0.80 [0.58, 1.38] (19), 1.39 [0.52, 3.56] (19), 5.77 [2.68, 11.25] (19), 59.85 [28.85, 103.71]
+  (17) for d = 2, 3, 5, 8, 10; Rosenbrock 0.48 (19), 0.33 (19), 3.39 (15), 7.81 (7), 48.54 (**1 seed only**). On Rosenbrock at
+  d = 8 and 10 CMA-ES usually needs fewer evaluations than BO needs for its own final gap (median 501 vs 884 at d = 10), so c\*
+  is mostly undefined there: BO has no break-even to report. **H4:** the median c\* rises with the budget under both targets
+  (Spearman 0.97 own target on both problems; median-target version 0.67 ellipsoid, 0.97 Rosenbrock); never decreasing.
+- **Censored seeds:** 1 CMA-ES long run never reached BO's own final gap (d = 5 Rosenbrock); at the absolute levels 1e-1, 1e-2,
+  1e-4, 1 run at d = 5 and d = 10 Rosenbrock and 2 at d = 8. They are listed per seed in `cost_censored.csv` with the cause
+  and whether BO reached the level.
+- **Overhead** of ARD-BO (mean method seconds per evaluation over the run, ellipsoid): 0.79, 1.10, 1.87, 4.10, 10.65 s for
+  d = 2, 3, 5, 8, 10 (`e1_overhead.csv`; 7 workers). CMA-ES is far below 1 ms.
+- Caveats: S for the ellipsoid has a CI containing 0. The E1 budgets differ per d, so the "final budget" rows mix d and budget.
 
-### E3, E2 other kappa, E1 d = 20, A8 c-e (optional, not yet run)
-- Run only if the core is ahead of schedule on 6 Nov (current estimate: it is not; `notes/compute_plan.md`). If not run, the
-  report says so as a cut from the experiment list, with the BO computational cost behind it.
+### E3 at d = 2 (run 6 Nov; design and statistics fixed in `analysis_addendum_e3.md`, bf2ae7c)
+- Decoy-basin function (`problems.decoy_basin`): success (f < 1) iff the point is within w of the narrow optimum. 5 widths x 30
+  seeds x {LogEI-BO, UCB-BO, CMA-ES, IPOP-CMA-ES, Sobol} at 200 evaluations (750 runs, 11:39 to 12:37, 7 workers, 58 min) and
+  CMA-ES, IPOP-CMA-ES, Sobol at 2000 evaluations (450 runs, 29 s). All `code_dirty = false`. Sources: `e3_success.csv`,
+  `e3_tests.csv` (`analyze_e3.py`, 2a5baba).
+- P(success), n = 200, w = 0.2, 0.1, 0.05, 0.025, 0.0125: LogEI-BO 0.80, 0.10, 0.03, 0, 0; UCB-BO 0.67, 0.10, 0.03, 0, 0; CMA-ES
+  0.80, 0.40, 0.07, 0, 0 (IPOP identical at 200); Sobol 1.00, 1.00, 0.97, 0.30, 0.07 (i.i.d. expectation 1.00, 1.00, 0.79, 0.33,
+  0.09; Sobol is a little above it at some widths, as expected for a low-discrepancy set).
+- n = 2000: CMA-ES 0.80, 0.40, 0.07, 0, 0; IPOP 1.00, 0.93, 0.57, 0.27, 0.10; Sobol 1.00, 1.00, 1.00, 1.00, 0.87.
+- **H3 statistics (addendum rules):** (i) P(w = 0.2) - P(w = 0.0125) is positive with CI excluding 0 for every method (BO-LogEI
+  0.80 [0.67, 0.93], BO-UCB 0.67 [0.50, 0.83], CMA-ES 0.80, IPOP 0.80 at 200 and 0.90 at 2000, Sobol 0.93 at 200): **success
+  falls with narrower basins: supported**. (ii) UCB - LogEI at w = 0.0125: 0.00 [0.00, 0.00], both at 0 of 30: **not resolved**
+  (neither supported nor refuted; at w = 0.2 LogEI is better, -0.13 [-0.27, -0.03]). (iii) IPOP - CMA-ES pooled over widths at
+  n = 2000: **+0.32 [0.25, 0.39]**: supported. At n = 200 the two are identical (no restart fits in the budget).
+- **Descriptive:** at 200 evaluations BO is no better than Sobol at any width and significantly worse for w >= 0.025 (e.g.
+  w = 0.05: LogEI minus Sobol -0.93 [-1.00, -0.83]). Sobol with 2000 points beats IPOP at every width (0.87 vs 0.10 at
+  w = 0.0125). The claim about the initial-design spacing is not separable at d = 2 (stated in the addendum).
 
-### Follow-up (reserved, not yet chosen)
-- Chosen after E1; its prediction is committed to `predictions.md` before it runs.
+### Follow-up: TuRBO rotation-penalty ablation (run 6 Nov; prediction in `predictions.md`, f65181c and b78a3f4)
+- Variants: ARD kernel with a cubic region, isotropic kernel (cubic region); default TuRBO = the E2 runs. 180 runs (30 seeds x
+  {aligned, rotated, aligned replicate} x 2 variants), 13:06 to 19:09 (5.7 h, 7 workers), `code_dirty = false`, `turbo.py`
+  change in 72cca55 (default reproduces 9 stored E2 trajectories exactly for 200 evaluations; the check must run
+  single-threaded, torch multithreading changes the TuRBO trajectory). Sources: `turbo_ablation.csv`,
+  `turbo_ablation_verdict.csv` (`analyze_ablation.py`, 2a5baba).
+- Median log10 gap at n = 500 [aligned / rotated / replicate]: default 0.87 / 2.29 / 0.87; cubic ARD 1.82 / 2.39 / 1.69; isotropic
+  2.42 / 2.45 / 2.42; ARD-BO 0.95 / 1.75; iso-BO 1.60 / 1.60; Sobol 3.76 / 3.72.
+- Delta_rot: default 1.56 [1.27, 1.63]; **cubic ARD 0.60 [0.49, 0.69]** (floor -0.08 [-0.24, 0.11]); **isotropic 0.01 [-0.09, 0.15]**
+  (floor 0.01 [-0.11, 0.14]). Contrast cubic ARD - default -0.96 [-1.08, -0.68]; isotropic - cubic ARD -0.59 [-0.72, -0.41].
+- **Verdict by the pre-registered rules:** cubic ARD: Delta_rot in [0.45, 1.25] with CI excluding 0 and a negative contrast with the
+  default: **prediction met**. Isotropic: |Delta_rot| <= 0.3 with CI containing 0 and the same after subtracting the noise floor:
+  **prediction met**.
+- **Reading that the rules do not show:** the reduction in penalty comes from the aligned side, not the rotated side. Cubic ARD
+  loses 0.95 decades when aligned (0.87 to 1.82) and 0.10 when rotated (2.29 to 2.39); the isotropic variant is equally poor in
+  both (2.42, 2.45), better than Sobol by 1.3 decades but worse than iso-BO (1.60). So the ARD-scaled region is what lets TuRBO
+  exploit axis alignment, and removing it removes the aligned advantage rather than improving the rotated case. This was
+  flagged as the main confound before the runs.
 
-### E4: cost analysis (not yet run)
+### E4: cost analysis (E1 table done, see E1 above)
 - Break-even evaluation cost c* from the E1 logs (`code/cost_table.py` -> `cost_table.csv`).
 - Measured run times so far, for context: BO at d = 10, 500 evaluations, 7 workers: 47.0 min per run with refit every 5
   and 29.1 min with refit every 10 (`a4_d10_check.csv`, 810e5df). TuRBO pilot, d = 10: 13.1-17.3 min at 500 evaluations,
@@ -237,10 +291,10 @@ data, so no number below comes from it yet.
 ## 4. Prediction versus outcome (H1-H5)
 | Hypothesis | Prediction (frozen in `predictions.md`, ac4c90f) | Status |
 |---|---|---|
-| H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | pending (E1) |
+| H1 | BO lead over CMA-ES shrinks with d at equal evaluations per dimension; at least 0.5 decades smaller at d = 10 than d = 2 (guess); no lead at d = 20 | ellipsoid S = +0.34 [-0.55, 1.14] (direction only), Rosenbrock S = +0.65 [0.03, 1.22] (meets 0.5); d = 20 not tested; tested at kappa = 100 (amendment 0363ee5); `e1_h1.csv`, 1fd7721 |
 | H2 | Both interactions (ARD vs iso BO; sep vs full CMA-ES) > 0 with CIs excluding 0; full CMA-ES Delta_rot > 0 with the box, about 0 without; rho >= 0.5 aligned and <= 0.2 rotated at n = 200 | CMA-ES part consistent with E0 (0.37 and 0.54 bounded; about 0 unbounded; `e0_rotation.csv`). The prediction was informed by E0, so this is not an independent test. E2 runs bounded only, so the unbounded part rests on E0 alone. rho at n = 200: 0.998 aligned (threshold 0.5), 0.168 rotated (threshold 0.2), medians over 20 runs (`e2_lowdim_rho.csv`); the two interactions are positive with CIs excluding 0 (`e2_primary.csv`) |
-| H3 | P(success) falls with basin width; IPOP beats default CMA-ES at larger budgets; UCB beats LogEI on the narrowest basin | not run (E3 optional) |
-| H4 | c* increases with budget and with d | pending (E1 logs) |
+| H3 | P(success) falls with basin width; IPOP beats default CMA-ES at larger budgets; UCB beats LogEI on the narrowest basin | E3 at d = 2: success falls with width for every method (supported); IPOP beats CMA-ES at n = 2000, pooled +0.32 [0.25, 0.39] (supported); UCB vs LogEI at the narrowest width 0 vs 0 of 30 (not resolved); `e3_tests.csv`, 2a5baba |
+| H4 | c* increases with budget and with d | median c* rises with the budget on both problems (Spearman 0.67 to 0.97); never decreasing; c* defined for 1 of 20 seeds at d = 10 Rosenbrock; `e1_h4.csv`, 1fd7721 |
 | H5 | CI of alpha-hat (d >= 10) contains 1.87; alpha-hat (all d) about 1.7 | d >= 10 (tau = 10): 2.02 [1.99, 2.06], excludes 1.87, so the pre-registered refutation criterion is met; all d: 1.82 [1.80, 1.84] against about 1.7 (`h5_alpha.csv`). 50 of 220 runs reached machine precision first (d = 40, 60, 80), left out of the fit |
 
 ## 5. Surprises and negative results
