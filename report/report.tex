@@ -236,7 +236,7 @@ Table~\ref{tab:h5}). The registered value 1.87 lies outside the $d\geq10$ interv
 
 \paragraph{Mechanism and alternatives.}
 In the regime maps (Figure~\ref{fig:e1}a,b), BO's lead over CMA-ES is largest at 10 to 20 evaluations per dimension
-for $d\leq 5$ and, on Rosenbrock, for $d\geq 8$. On the ellipsoid it peaks later: at 40 evaluations per dimension
+for $d\leq 5$ and, on Rosenbrock, for $d\geq 8$. On the ellipsoid it peaks later: at about 30 evaluations per dimension
 for $d=8$ and $10$.
 At the final budget CMA-ES has caught up with BO on Rosenbrock for $d\geq 5$ (and overtaken it for $d\geq 8$)
 and on the ellipsoid at $d=2$. These are point estimates; the confidence intervals are wide in places, so peaks at neighbouring grid points are not separately resolved.
@@ -245,22 +245,22 @@ if CMA-ES's learning cost grows faster than the $20d$ evaluations allowed, its l
 so the shrinking lead must come at least partly from BO's side, plausibly because a GP needs more points per dimension to
 model the function as $d$ grows (a hypothesis). On the ellipsoid $D(d)$ is not monotone: the lead grows from
 $\numHoneellipsoidDtwo$ at $d=2$ to $\numHoneellipsoidDfive$ at $d=5$ and then shrinks to $\numHoneellipsoidDeight$ and
-$\numHoneellipsoidDten$, which is consistent with two opposing effects but does not identify them. For H4 is consistent with
-: GP fitting and acquisition costs grow with $n$ and $d$, while CMA-ES's cost stays negligible. The
+$\numHoneellipsoidDten$, which is consistent with two opposing effects but does not identify them. For H4, the data are consistent with
+GP fitting and acquisition costs growing with $n$ and $d$, while CMA-ES's cost stays negligible (no fit/acquisition split was measured). The
 alternative that $c^*$ rises only because E1 budgets grow with $d$ cannot be excluded, since budget and dimension change
 together.
 
 \paragraph{Robustness.}
-H1’s direction is positive on all three problem sets, but its CI excludes 0 only for the κ = 10⁴ supplement and, barely, for Rosenbrock;
+H1's direction is positive on all three problem sets, but its CI excludes 0 only for the $\kappa=10^4$ supplement and, barely, for Rosenbrock;
 its size depends on the problem, so the quantitative guess is not robust. H4 holds for both problems.
-It also holds when the target is the median BO final gap instead of each run’s own final gap (Spearman 0.67 on the ellipsoid, 0.97 on Rosenbrock).
+It also holds when the target is the median BO final gap instead of each run's own final gap (Spearman 0.67 on the ellipsoid, 0.97 on Rosenbrock).
 H5 is sensitive to the threshold
 $\tau$ (Table~\ref{tab:h5}): the $d\geq10$ exponent lies above 1.87 for $\tau=10$ and $\tau=100$ but below it for
 $\tau=3$, which rests on few runs, so the learning-rate prediction is refuted in both directions depending on how
 ``learned'' is defined.
 
 \paragraph{Interpretation.}
-BO’s advantage is largest early in a run (10 to 30 evaluations per dimension) and at low to moderate dimension (largest at d = 3 to 5 on the κ = 100 ellipsoid);
+BO's advantage is largest early in a run (10 to 30 evaluations per dimension) and at low to moderate dimension (largest at d = 3 to 5 on the $\kappa=100$ ellipsoid);
 it is eroded as dimension and budget grow and as evaluations become cheaper.
 The learning-rate argument \citep{hansen2016tutorial} predicts CMA-ES's geometry learning only roughly;
 step-size adaptation and the evolution path, which the derivation ignores, may explain the difference. Caveats: the
@@ -290,9 +290,9 @@ on $\numeprobtwohundredwidecma$ and $\numeprobtwohundrednarrowcma$. UCB does not
 on every seed), so this part of H3 is not resolved, and on the widest basin LogEI is better
 ($\numethreeucbminuslogeiwide$). IPOP beats default CMA-ES at 2000 evaluations, pooled over widths
 $\numethreeipoppooled$, reaching $\numeprobtwothousandnarrowipop$ at the narrowest basin where CMA-ES stays at
-$\numeprobtwothousandnarrowcma$. Unexpectedly, Sobol is best: $\numeprobtwohundredwidesobol$ and
-$\numeprobtwohundrednarrowsobol$ at 200 evaluations and $\numeprobtwothousandnarrowsobol$ at the narrowest basin with
-2000 points.
+$\numeprobtwothousandnarrowcma$. Unexpectedly, Sobol is best: $\numeprobtwohundredwidesobol$ at the widest and
+$\numeprobtwohundrednarrowsobol$ at the narrowest width at 200 evaluations, and $\numeprobtwothousandnarrowsobol$ at the
+narrowest width with 2000 points.
 
 \paragraph{Mechanism and alternatives.}
 An implementation error is ruled out by a sanity check: after the initial design almost all BO evaluations sit at the
