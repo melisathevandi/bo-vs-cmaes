@@ -1,1 +1,115 @@
-% Bibliography placeholder: add entries here (pycma, BoTorch, TuRBO, CMA-ES tutorial, Matern GP references).
+% references.bib -- BO vs CMA-ES study (8 active entries, all with a free-to-read source in the url field)
+% Cite only what the report actually uses. Entries tagged [verify] were not checked against the source today.
+% Optional entries (commented out at the bottom) can be uncommented if the report discusses that topic.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Reading starter kit (course page) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@misc{frazier2018tutorial,
+  author        = {Frazier, Peter I.},
+  title         = {A Tutorial on {B}ayesian Optimization},
+  year          = {2018},
+  eprint        = {1807.02811},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/1807.02811}
+}
+
+@misc{hansen2016tutorial,
+  author        = {Hansen, Nikolaus},
+  title         = {The {CMA} Evolution Strategy: A Tutorial},
+  year          = {2016},
+  eprint        = {1604.00772},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/1604.00772}
+}
+
+@inproceedings{eriksson2019turbo,
+  author    = {Eriksson, David and Pearce, Michael and Gardner, Jacob R. and Turner, Ryan and Poloczek, Matthias},
+  title     = {Scalable Global Optimization via Local {B}ayesian Optimization},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {32},
+  pages     = {5496--5507},
+  year      = {2019},
+  url       = {https://arxiv.org/abs/1910.01739}
+}
+
+@article{hansen2021coco,   % journal version is paywalled; the arXiv copy is free
+  author  = {Hansen, Nikolaus and Auger, Anne and Ros, Raymond and Mersmann, Olaf and Tu{\v{s}}ar, Tea and Brockhoff, Dimo},
+  title   = {{COCO}: a platform for comparing continuous optimizers in a black-box setting},
+  journal = {Optimization Methods and Software},
+  volume  = {36},
+  number  = {1},
+  pages   = {114--144},
+  year    = {2021},
+  url     = {https://arxiv.org/abs/1603.08785}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Closest prior work: BO vs CMA-ES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@article{santoni2024hdbo,
+  author  = {Santoni, Maria Laura and Raponi, Elena and De Leone, Renato and Doerr, Carola},
+  title   = {Comparison of High-Dimensional {B}ayesian Optimization Algorithms on {BBOB}},
+  journal = {ACM Transactions on Evolutionary Learning and Optimization},
+  volume  = {4},
+  number  = {3},
+  year    = {2024},
+  url     = {https://arxiv.org/abs/2303.00890}
+}
+
+@inproceedings{hvarfner2024vanilla,
+  author    = {Hvarfner, Carl and Hellsten, Erik Orm and Nardi, Luigi},
+  title     = {Vanilla {B}ayesian Optimization Performs Great in High Dimensions},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {235},
+  pages     = {20793--20817},
+  year      = {2024},
+  url       = {https://proceedings.mlr.press/v235/hvarfner24a.html}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Methods used in the experiments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@inproceedings{ament2023logei,   % LogEI acquisition function
+  author    = {Ament, Sebastian and Daulton, Samuel and Eriksson, David and Balandat, Maximilian and Bakshy, Eytan},
+  title     = {Unexpected Improvements to Expected Improvement for {B}ayesian Optimization},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {36},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2310.20708}
+}
+
+@techreport{ros2008sepcma,   % sep-CMA-ES (ablation control). Free INRIA/HAL version of the PPSN X paper.
+  author      = {Ros, Raymond and Hansen, Nikolaus},
+  title       = {A Simple Modification in {CMA-ES} Achieving Linear Time and Space Complexity},
+  institution = {INRIA},
+  type        = {Research Report},
+  number      = {RR-6498},
+  year        = {2008},
+  url         = {https://hal.archives-ouvertes.fr/inria-00270901/en}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OPTIONAL: uncomment only if the report uses them %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% E3 (if reported): IPOP-CMA-ES (the IEEE version is paywalled; a free PDF is hosted at sci2s.ugr.es)
+% @inproceedings{auger2005ipop,
+%   author    = {Auger, Anne and Hansen, Nikolaus},
+%   title     = {A Restart {CMA} Evolution Strategy With Increasing Population Size},
+%   booktitle = {2005 IEEE Congress on Evolutionary Computation (CEC)},
+%   volume    = {2}, pages = {1769--1776}, year = {2005},
+%   url       = {https://sci2s.ugr.es/sites/default/files/files/TematicWebSites/EAMHCO/contributionsCEC05/auger05ARCMA.pdf}
+% }
+% E3 (if UCB is reported):  [verify] check the arXiv number
+% @inproceedings{srinivas2010gpucb,
+%   author    = {Srinivas, Niranjan and Krause, Andreas and Kakade, Sham M. and Seeger, Matthias},
+%   title     = {Gaussian Process Optimization in the Bandit Setting: No Regret and Experimental Design},
+%   booktitle = {Proceedings of the 27th International Conference on Machine Learning (ICML)},
+%   pages     = {1015--1022}, year = {2010},
+%   url       = {https://arxiv.org/abs/0912.3995}
+% }
+% If BoTorch/GPyTorch was used:
+% @inproceedings{balandat2020botorch,
+%   author    = {Balandat, Maximilian and Karrer, Brian and Jiang, Daniel R. and Daulton, Samuel and Letham, Benjamin and Wilson, Andrew Gordon and Bakshy, Eytan},
+%   title     = {{BoTorch}: A Framework for Efficient {M}onte-{C}arlo {B}ayesian Optimization},
+%   booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+%   volume    = {33}, year = {2020},
+%   url       = {https://arxiv.org/abs/1910.06403}
+% }

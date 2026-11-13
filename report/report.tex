@@ -3,23 +3,42 @@
 % `code/make_figures.py` and `code/make_tables.py`); every number in the text is a macro from generated/numbers.tex.
 % `% macros:` lines list macro-name prefixes (a trailing * means "all macros starting with"); code/check_reproduction.py
 % checks that every macro in numbers.tex is listed in exactly one section.
-\documentclass[10pt,a4paper]{article}
-\usepackage[margin=2cm]{geometry}
-\usepackage{graphicx,booktabs,amsmath,amssymb,hyperref}
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PREAMBLE (course template, two-column) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[numbers,sort]{natbib}
+\usepackage{amsfonts,amsmath,amssymb}
+\usepackage{graphicx,booktabs}
+\usepackage{libertine}
+\usepackage[a4paper,margin=1.8cm,columnsep=0.7cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    linkcolor = blue,
+    urlcolor  = blue,
+    citecolor = blue,
+    anchorcolor = blue}
+\urlstyle{same}
 \graphicspath{{figures/}}
 \input{generated/numbers.tex}
-
-\title{TODO: title}
-\author{TODO: author name (student number)}
-\date{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
+
+\title{TODO: title}
+\author{}
+\date{\today}
 \maketitle
 
-% Repository URL: TODO (must appear at the start of the report). Names and student numbers: see authors.md.
+{\bf Group Composition:}
+\begin{enumerate}
+\item TODO: name, student ID, email
+\end{enumerate}
+
+{\bf Github Repository:} \url{TODO: repository URL}
 
 \section{Introduction and hypotheses}
-% sources: predictions.md (H1--H5 and the follow-up), docs/topic_bo_vs_es.md
+% sources: predictions.md (H1--H5 and the follow-up)
 % figures: none
 % tables: none
 % macros: none
@@ -34,8 +53,8 @@
 % figures: fig1_e2_primary (E2 primary: final gap and rotation penalty), fig2_e2_lowdim (convergence, relevance ratio, rank correlation)
 % tables: tab_e2, tab_lowdim
 % macros: gapmed*, drot*, interaction*, rhon*, rankcorrn*
-\begin{figure}[t]\centering\includegraphics[width=\linewidth]{fig1_e2_primary}\caption{TODO}\end{figure}
-\begin{figure}[t]\centering\includegraphics[width=\linewidth]{fig2_e2_lowdim}\caption{TODO}\end{figure}
+\begin{figure*}[t]\centering\includegraphics[width=\linewidth]{fig1_e2_primary}\caption{TODO}\end{figure*}
+\begin{figure*}[t]\centering\includegraphics[width=\linewidth]{fig2_e2_lowdim}\caption{TODO}\end{figure*}
 \begin{table}[t]\centering\input{generated/tab_e2}\caption{TODO}\end{table}
 \begin{table}[t]\centering\input{generated/tab_lowdim}\caption{TODO}\end{table}
 
@@ -43,7 +62,7 @@
 % figures: fig3_e1_h5 (regime map, H1 statistic at both kappa, CMA-ES learning time)
 % tables: tab_cstar, tab_h5
 % macros: Hone*, Hfour*, cstar*, overhead*, alpha*
-\begin{figure}[t]\centering\includegraphics[width=\linewidth]{fig3_e1_h5}\caption{TODO}\end{figure}
+\begin{figure*}[t]\centering\includegraphics[width=\linewidth]{fig3_e1_h5}\caption{TODO}\end{figure*}
 \begin{table}[t]\centering\input{generated/tab_cstar}\caption{TODO}\end{table}
 \begin{table}[t]\centering\input{generated/tab_h5}\caption{TODO}\end{table}
 
@@ -72,8 +91,9 @@
 % tables: none
 % macros: none
 
-\bibliographystyle{plain}
-\bibliography{references}
+% Bibliography: uncomment once references.bib exists and the text cites something.
+%\bibliographystyle{alpha}
+%\bibliography{references}
 
 \appendix
 \section{Appendix}
