@@ -1,5 +1,5 @@
 # BO timing calibration (cost only): real runs at the E2 primary setting, cold GP refits every 5
-# iterations, 3 seeds. Used to calibrate the compute estimator in code/compute_plan.py.
+# iterations, 3 seeds. Used to calibrate the compute estimate.
 experiment = "pilot_bo"
 budget = 500
 seeds = [0, 1, 2]

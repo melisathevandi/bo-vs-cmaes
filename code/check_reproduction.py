@@ -1,12 +1,12 @@
 """Clean-clone check: re-derive every table and figure from results/ in a fresh clone and compare with what is committed.
 
-    uv run python code/check_reproduction.py --raw results/raw [--latex] [--keep]
+    uv run python code/check_reproduction.py [--raw DIR] [--latex] [--keep]
 
 Steps
   1. Required files exist in the committed tree (readme.md, authors.md, report/report.tex, code/, results/summary, ...).
   2. `git clone` of the committed state (HEAD) into a temporary directory, so anything that is only in the working
-     tree (uncommitted code, untracked files) cannot be used. results/raw is not tracked (size), so it is linked into
-     the clone from --raw.
+     tree (uncommitted code, untracked files) cannot be used. The clone's own (tracked) results/raw is used; only if
+     the clone has none is results/raw linked into it from --raw.
   3. The derived files (everything in results/summary except the outputs of the scripts listed at the end, and all of
      report/generated and report/figures) are deleted in the clone, then every analysis script that reads results/raw
      is run, then make_tables.py and make_figures.py.
@@ -17,8 +17,8 @@ Steps
      every listed prefix matches at least one macro.
   6. With --latex, report/report.tex compiles in the clone.
 Not re-derived here (they run new computations rather than read results/raw): e0_invariance.py, anchor.py,
-pilot_timing.py, diagnose_warm_start.py, e3_exploration_check.py, compute_plan.py, and the pilot run-time table. Their outputs are
-tracked as they were run and kept in the clone.
+pilot_timing.py, diagnose_warm_start.py, e3_exploration_check.py, and the pilot run-time table
+(results/summary/pilot_run_timing.csv). Their outputs are tracked as they were run and kept in the clone.
 Exit status 0 only if every check passes.
 """
 
@@ -105,15 +105,19 @@ def main():
             failures.append(f"nothing tracked under {d}")
     print(f"[1] required files: {'ok' if not failures else failures}")
 
-    raw = Path(args.raw).resolve()
-    if not raw.is_dir():
-        print(f"results/raw not found at {raw}: cannot re-derive anything")
-        return 1
     tmp = Path(tempfile.mkdtemp(prefix="bo_vs_cmaes_clone_"))
     clone = tmp / "clone"
     run(["git", "clone", "--quiet", str(ROOT), str(clone)], ROOT)
-    link(raw, clone / "results" / "raw")
-    print(f"[2] cloned HEAD to {clone}; results/raw linked from {raw}")
+    linked = not (clone / "results" / "raw").is_dir()
+    if linked:
+        raw = Path(args.raw).resolve()
+        if not raw.is_dir():
+            print(f"results/raw is not in the clone and not found at {raw}: cannot re-derive anything")
+            return 1
+        link(raw, clone / "results" / "raw")
+        print(f"[2] cloned HEAD to {clone}; results/raw linked from {raw}")
+    else:
+        print(f"[2] cloned HEAD to {clone}; results/raw from the clone")
 
     # Delete every derived file first, so that a script that silently writes nothing shows up as a missing file.
     kept = {"e0_rotation.csv", "anchor.csv", "pilot_timing.csv", "pilot_run_timing.csv", "a4_warm_start_diagnostic.csv",
@@ -136,7 +140,7 @@ def main():
 
     changed = run(["git", "status", "--porcelain", "--", "results/summary", "report/generated", "report/figures"],
                   clone).stdout.strip().splitlines()
-    changed = [c for c in changed if "results/raw" not in c]
+    changed = [c for c in changed if "results/raw" not in c]   # summary, generated and figures only
     print(f"[4] files that differ from the committed ones: {changed if changed else 'none'}")
     failures += [f"differs from committed: {c}" for c in changed]
 
@@ -150,7 +154,8 @@ def main():
         if r.returncode:
             failures.append("LaTeX compile failed")
 
-    unlink(clone / "results" / "raw")
+    if linked:
+        unlink(clone / "results" / "raw")
     if not args.keep:
         shutil.rmtree(tmp, ignore_errors=True)
     print("PASS" if not failures else "FAIL:\n  " + "\n  ".join(failures))

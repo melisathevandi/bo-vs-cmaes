@@ -15,8 +15,8 @@ report/*.fls
 report/*.fdb_latexmk
 report/*.toc
 
-# Raw run output can be large; summaries and generated tables are tracked
-results/raw/
+# Assignment documents (not part of the code release)
+docs/
 
 # OS
 Thumbs.db
