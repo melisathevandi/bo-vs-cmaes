@@ -45,4 +45,4 @@ CMA-ES run of the same seed. A failed check is reported before any result.
 
 ## Not done
 No test of the d = 20 prediction, no TuRBO in E1, no new definition beyond the above. Anything else computed from E1 is
-labelled descriptive in `notes/report_notes.md`.
+labelled descriptive in the report.

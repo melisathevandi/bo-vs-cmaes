@@ -35,7 +35,7 @@ file, both committed before the corresponding results were analysed.
 | `results/summary/` | Aggregated tables |
 | `report/` | Report source: `report.tex`, `references.bib`, `figures/`, `generated/` |
 | `predictions.md`, `analysis_addendum_*.md` | Hypotheses and analysis rules, fixed before the results they govern |
-| `notes/` | Lab notebook (dated process record) and results summary with sources |
+| `notes/` | Lab notebook (dated process record) |
 
 ## Installation
 

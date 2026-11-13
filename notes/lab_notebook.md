@@ -47,9 +47,9 @@ experiment, long-budget probe, second problem family) were not run.
   first E0 CSV) were deleted and regenerated.
 - **E0 result** (CMA-ES, d=10, 1000 evaluations, 50 paired seeds, median difference of log10 gap [95% bootstrap CI];
   `results/summary/e0_rotation.csv`):
-  - Unbounded: Delta_rot = -0.18 [-0.37, 0.07] (kappa=1e2), -0.02 [-0.26, 0.15] (kappa=1e4). Consistent with rotation
+  - Unbounded: Delta_rot = -0.18 [-0.37, 0.07] (kappa=1e2), -0.01 [-0.26, 0.15] (kappa=1e4). Consistent with rotation
     invariance.
-  - Box [0,1]^d (as in every main experiment): Delta_rot = +0.37 [0.09, 0.76] (kappa=1e2), +0.54 [0.25, 0.66] (kappa=1e4).
+  - Box [0,1]^d (as in every main experiment): Delta_rot = +0.37 [0.08, 0.76] (kappa=1e2), +0.54 [0.25, 0.66] (kappa=1e4).
     Rotation costs CMA-ES about 0.4-0.5 decades once the box is present.
   - Noise floor (aligned replicate): +0.03 [-0.32, 0.44], +0.05 [-0.31, 0.28], -0.02 [-0.16, 0.09] and -0.16 [-0.31, -0.02];
     the last cell (kappa=1e4, unbounded) is marginally below 0, and is small compared with the bounded rotation effect.
@@ -66,7 +66,8 @@ experiment, long-budget probe, second problem family) were not run.
 - The CMA-ES wrapper evaluates exactly the same points as `cma.fmin2` on the same bounded problem, start and seed
   (10/10 seeds, d=8 rotated ellipsoid, 200 evaluations).
 - Branin (d=2), 40 evaluations, 10 seeds, threshold median gap < 0.01 fixed beforehand: BO (ARD, LogEI) median 1.0e-3
-  (max 6.4e-3); TuRBO median 2.3e-3 (max 5.1e-3); Sobol with 40 evaluations 1.07 and with 400 evaluations 0.11.
+  (max 6.4e-3); TuRBO median 2.3e-3 (max 5.1e-3); Sobol with 40 evaluations 1.07 and with 400 evaluations 0.11. The BO and TuRBO values of this first run are
+  superseded: `anchor.csv` holds the re-run under the cold-refit default (entry of 2026-11-01, A4 check, below).
 
 ## 2026-11-01 (H5 expected exponent; check of the draft predictions)
 - A check of the draft `predictions.md` found an error in the H5 derivation: the numerator of c1 + c_mu is
@@ -74,7 +75,7 @@ experiment, long-budget probe, second problem family) were not run.
 - Checked numerically with the learning rates pycma actually uses (`code/h5_expected_alpha.py`): the lambda / numerator
   factor is almost constant in d (log-log slope about -0.005), so it does not change alpha. Rate-based expected alpha:
   1.71 (d in [2, 80]) and 1.87 (d >= 10) with pycma 4.5.0; 1.69 / 1.86 with the tutorial formulas. pycma's c1 matches the
-  tutorial; its c_mu is 7-48% larger (48% at d=2, 17% at d=10, 7% at d=80).
+  tutorial; its c_mu is 8-48% larger (48% at d=2, 17% at d=10, 8% at d=80).
 - Consequence: the draft prediction "CI for d >= 10 contains 2" is not what the rates predict at finite d. The prediction
   compares the fitted alpha with the rate-based value 1.87.
 - UCB is kept in E3 (H3 makes a UCB-vs-LogEI prediction; E3 is at d <= 5, where BO is cheap).
@@ -95,7 +96,7 @@ experiment, long-budget probe, second problem family) were not run.
   difference. Not investigated further.
 - **Outcome:** warm start is off (`warm_start=False`, the default). Main runs use cold-start fits.
 - **Cold refit every 10 vs cold every 5** (same A4 data): median differences at n=200 and n=300 are 0.00 to +0.03 with CIs
-  containing 0 on both problems (widths about +-0.3 decades), and wall time is 25% (ellipsoid) and 10% (Rosenbrock) lower
+  containing 0 on both problems (CI half-widths 0.13 to 0.32 decades), and wall time is 25% (ellipsoid) and 10% (Rosenbrock) lower
   at n=300. **Outcome:** main runs use cold fits and `refit_every = 10` once n > 100 (set explicitly in each config).
   Limits: tested at d=5 and n <= 300 with 10 seeds, so it is not evidence for d=10-20 at n=1000.
 - Correctness anchor re-run under the cold default: BO (Branin, 40 evaluations) median gap 2.0e-3, worst seed 1.8e-2
@@ -106,7 +107,7 @@ experiment, long-budget probe, second problem family) were not run.
 
 ## 2026-11-01 (timing calibration; A4 check at d=10 set up)
 - Timing pilots: BO d=10, N=500, cold refit every 5: 36.5, 37.0, 38.9 min (3 real runs, ~6 busy processes); TuRBO d=10:
-  13-17 min (N=500), 26-32 min (N=1000); d=20, N=1000: 53-55 min (`results/summary/pilot_run_timing.csv`). The raw
+  13-17 min (N=500), 25-32 min (N=1000); d=20, N=1000: 53-55 min (`results/summary/pilot_run_timing.csv`). The raw
   pilot-based BO estimator was too optimistic (21 min vs 37 measured; 3.6 vs 10.0 min for the A4 d=5 runs).
 - The calibration factor 2.28 = measured / pilot integral already contains the load of the ~6 processes that were running;
   an assumed factor 1.10 covers the 7th worker and is checked against the wall times of the A4 check at d=10 (7 workers).
@@ -226,7 +227,7 @@ experiment, long-budget probe, second problem family) were not run.
   `table["T"].notna()` in `code/h5_learning_time.py`; the raw runs were untouched and the summary was rerun twice, with
   identical `h5_alpha.csv` and `h5_learning_time.csv` (bootstrap seed 0). No definition changed.
 - Result against the frozen prediction (`predictions.md`): the d >= 10 CI excludes 1.87, so the refutation criterion is met
-  (see `notes/report_notes.md`, H5). The H5 records have no worker field; the log header says 7 workers.
+  (`results/summary/h5_alpha.csv`). The H5 records have no worker field; the log header says 7 workers.
 - rho and rank-correlation analysis of E2 low-effective dimension: `code/analyze_lowdim.py`.
 
 ## 2026-11-06: E1 finished, E1 long CMA-ES runs, E3 d=2, TuRBO ablation
@@ -237,7 +238,8 @@ experiment, long-budget probe, second problem family) were not run.
 - `analysis_addendum_e1.md` was committed (4680bb8) before any E1 gap value was computed; before it, only file counts,
   `code_dirty`/`workers` fields, per-job wall times and run durations had been inspected. `predictions.md` H1 names kappa =
   1e4 but the E1 configs use kappa = 100 (no recorded reason for the difference): dated amendment 0363ee5.
-- E3 d = 2 and TuRBO ablation: design choices and results in `notes/report_notes.md`. A 2-seed smoke test of E3 continued
+- E3 d = 2 and TuRBO ablation: design choices in `analysis_addendum_e3.md` and `predictions.md` (follow-up section),
+  results in `results/summary/e3_*.csv` and `results/summary/turbo_ablation*.csv`. A 2-seed smoke test of E3 continued
   to write records after it was stopped (orphaned workers); `results/raw/e3_d2_quick` was deleted, and no real records were
   affected. A test file was briefly placed under `code/` while E3 was running (removed within about a minute; the 633 records
   written by then have `code_dirty = false`).
@@ -266,7 +268,7 @@ experiment, long-budget probe, second problem family) were not run.
   macros are listed in exactly one section, the placeholder compiles. Figures are saved without a creation date, so they
   compare byte for byte.
 - `.gitignore` does not exclude `report/figures/`; LaTeX build files are ignored.
-- `results/raw` (3.7 GB) is not tracked (see `readme.md`). Appendix tables (sensitivity, A4, anchor, E0, CMA-ES long runs,
+- `results/raw` (266 MB of JSON; 3.7 GB on disk) was not tracked at this point; it was committed later (see `readme.md`). Appendix tables (sensitivity, A4, anchor, E0, CMA-ES long runs,
   E3 sanity) are not generated; their source CSVs are listed in `report/report.tex`.
 
 ## 2026-11-07: figure revisions
