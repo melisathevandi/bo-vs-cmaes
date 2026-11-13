@@ -27,17 +27,15 @@ file, both committed before the corresponding results were analysed.
 | `code/run_core.sh` | Runs the sensitivity grids, E2 and E1 in sequence, with retries |
 | `code/analyze_*.py`, `code/cost_table.py`, `code/descriptive_e2.py`, `code/h5_*.py`, `code/e3_sanity.py` | Analyses: `results/raw` -> `results/summary` |
 | `code/e0_invariance.py`, `code/anchor.py`, `code/pilot_timing.py`, `code/diagnose_warm_start.py`, `code/e3_exploration_check.py` | Checks that run their own computations |
-| `code/compute_plan.py` | Compute estimate per experiment, written to `notes/compute_plan.md` (planning only) |
 | `code/make_tables.py`, `code/make_figures.py` | Report tables, figures and `numbers.tex` |
 | `code/check_reproduction.py` | Re-derives all tables and figures in a clean clone and compares them with the committed files |
 | `code/tests/` | Unit tests |
 | `configs/` | One TOML file per experiment |
-| `results/raw/` | Per-run JSON files (not tracked, see below) |
-| `results/summary/` | Aggregated tables (tracked) |
+| `results/raw/` | Per-run JSON files, one per job (see below) |
+| `results/summary/` | Aggregated tables |
 | `report/` | Report source: `report.tex`, `references.bib`, `figures/`, `generated/` |
 | `predictions.md`, `analysis_addendum_*.md` | Hypotheses and analysis rules, fixed before the results they govern |
-| `notes/` | Lab notebook (dated process record), results summary with sources, compute estimate |
-| `docs/` | Assignment guidelines and topic description |
+| `notes/` | Lab notebook (dated process record) and results summary with sources |
 
 ## Installation
 
@@ -53,8 +51,8 @@ All experiments run on CPU (`device: cpu` is stored in every result file). `run_
 thread per worker. GP-based trajectories (BO, TuRBO) are not identical under multithreaded torch, so a script that re-runs
 a method directly must also call `torch.set_num_threads(1)` and set `OMP_NUM_THREADS=1`. Compiling the report with
 `check_reproduction.py --latex` additionally requires a LaTeX installation with `latexmk`. The experiments were run on
-Windows 11; the only platform-specific code is the directory link in `check_reproduction.py` (junction on Windows,
-symlink elsewhere).
+Windows 11; the only platform-specific code is the optional directory link in `check_reproduction.py` (junction on
+Windows, symlink elsewhere), used only when `results/raw` is supplied from outside the repository.
 
 ## Data
 
@@ -64,36 +62,43 @@ device, package versions, the git commit and a `code_dirty` flag (true if `code/
 finished), and, for jobs run after commit 7e62b17, the worker count. The job id is the hash of the job specification, so
 re-running a config skips finished jobs.
 
-### Raw results are not included
+### Raw results (`results/raw/`)
 
-`results/raw/` (about 3.7 GB, one JSON file per run, all experiments below) is excluded by `.gitignore` and is not part
-of the repository. The aggregated tables in `results/summary/` are included, as are the report tables
-(`report/generated/`) and figures (`report/figures/`).
+`results/raw/` holds 3,769 JSON files (about 266 MB; the largest is about 1 MB), one per job, in one directory per
+experiment: the sensitivity grids (`sens_cmaes`, `sens_bo`), the timing pilots (`pilot_bo`, `pilot_turbo`), the A4
+checks (`a4_refit_check`, `a4_d10_check`), E2 (`e2_primary`, `e2_cma_sigma015`, `e2_cma_long`, `e2_lowdim`), H5 (`h5`),
+E1 (`e1_d{2,3,5,8,10}`, `e1_d{2,3,5,8,10}_cma_long`, `e1k4_d2`, `e1k4_d5`), E3 (`e3_d2`, `e3_d2_long`) and the TuRBO
+ablation (`turbo_ablation`). `.gitattributes` stores them without line-ending conversion.
 
-The following scripts re-derive `results/summary/` from `results/raw/` (the raw files are needed; they are regenerated
-by re-running the configs):
+The following scripts read `results/raw/` and write `results/summary/`:
 
 | Script | Output in `results/summary/` |
 |---|---|
 | `analyze_e2.py`, `descriptive_e2.py`, `analyze_cma_long.py` | `e2_primary.csv`, `e2_primary_descriptive.csv`, `e2_cma_long_reach.csv` |
 | `analyze_lowdim.py` | `e2_lowdim_rho.csv`, `e2_lowdim_checkpoints.csv` |
-| `h5_expected_alpha.py`, `h5_learning_time.py` | `h5_expected_alpha.csv` (no raw files needed), `h5_learning_time.csv`, `h5_alpha.csv` |
+| `h5_learning_time.py` | `h5_learning_time.csv`, `h5_alpha.csv` |
 | `analyze_sensitivity.py` | `sensitivity_cmaes.csv`, `sensitivity_bo.csv` |
 | `analyze_a4.py` (two calls, see `check_reproduction.py`) | `a4_refit_check.csv`, `a4_d10_check.csv` |
 | `cost_table.py`, `analyze_e1.py`, `analyze_e1_kappa1e4.py` | `cost_table.csv`, `cost_censored.csv`, `e1_regime_map.csv`, `e1_h1.csv`, `e1_h4.csv`, `e1_cost_median_target.csv`, `e1_overhead.csv`, `e1_kappa1e4_h1.csv` |
 | `analyze_e3.py`, `e3_sanity.py` | `e3_success.csv`, `e3_tests.csv`, `e3_sanity.csv` |
 | `analyze_ablation.py` | `turbo_ablation.csv`, `turbo_ablation_verdict.csv` |
 
-Files in `results/summary/` that are not derived from `results/raw/`:
-- `e0_rotation.csv` (`e0_invariance.py`), `anchor.csv` (`anchor.py`), `pilot_timing.csv` (`pilot_timing.py`) and
-  `a4_warm_start_diagnostic.csv` (`diagnose_warm_start.py`) come from scripts that run their own computations.
-- `e3_exploration_check.txt` is the console output of `e3_exploration_check.py` (about 17 minutes on one core).
-- `pilot_run_timing.csv` summarises the wall times of the `pilot_bo` and `pilot_turbo` runs; no script in `code/`
-  writes it.
+`make_figures.py` also reads `results/raw/` directly (Figures 1 and 2, the regime-map panels of Figure 3, and part of
+`numbers.tex`). With the repository as committed, every table in `report/generated/`, all five figures and all 122
+macros of `numbers.tex` can be regenerated; `check_reproduction.py` does this and compares the output with the
+committed files.
 
-Without `results/raw/`, `make_tables.py` reproduces every table in `report/generated/` from `results/summary/`, and
-`make_figures.py` reproduces Figures 4 and 5. Figures 1 and 2, the regime-map panels of Figure 3 and 30 of the 122
-macros in `numbers.tex` need `results/raw/`.
+Files in `results/summary/` that are not derived from `results/raw/`:
+- `h5_expected_alpha.csv` (`h5_expected_alpha.py`), `e0_rotation.csv` (`e0_invariance.py`), `anchor.csv` (`anchor.py`),
+  `pilot_timing.csv` (`pilot_timing.py`) and `a4_warm_start_diagnostic.csv` (`diagnose_warm_start.py`) come from
+  scripts that run their own computations.
+- `e3_exploration_check.txt` is saved console output of `e3_exploration_check.py` (UCB with three exploration weights,
+  6 seeds; about 17 minutes on one core); the script prints its results and does not write the file. Added in commit
+  a0fffe1.
+- `pilot_run_timing.csv` has no generating script in the repository. It lists, for the 9 runs in
+  `results/raw/pilot_bo` and `results/raw/pilot_turbo`, the wall time `wall_s / 60` (column `wall_min`) and, for TuRBO,
+  the number of trust-region restarts recorded in the run's `meta`; these values equal the raw files exactly. Added in
+  commit bf39d63.
 
 ## Quick checks (minutes)
 
@@ -105,13 +110,13 @@ uv run python code/h5_learning_time.py --quick                     # d <= 10, 3 
 uv run python code/make_tables.py                                  # report tables from results/summary
 ```
 
-With `results/raw/` present, each `analyze_*.py` script takes seconds to minutes, and
+Each `analyze_*.py` script takes seconds to minutes, and
 
 ```
-uv run python code/check_reproduction.py --raw results/raw [--latex]
+uv run python code/check_reproduction.py [--latex]
 ```
 
-clones the committed state, links `results/raw`, deletes every derived file in the clone, runs the analysis scripts,
+clones the committed state (including `results/raw`), deletes every derived file in the clone, runs the analysis scripts,
 `make_tables.py` and `make_figures.py`, and fails if any file under `results/summary`, `report/generated` or
 `report/figures` differs from the committed one, or if a macro of `numbers.tex` is not listed in a section of
 `report/report.tex`. Bootstrap seeds are fixed and figures are written without a creation date, so the comparison is
@@ -120,7 +125,7 @@ byte for byte.
 ## Full runs (hours)
 
 `code/run_experiment.py --config configs/<name>.toml [--workers N]` runs one config. Measured wall times, 7 workers unless
-stated; `notes/compute_plan.md` gives the planning estimates per experiment.
+stated.
 
 | Experiment | Config(s) | Runs | Wall time |
 |---|---|---|---|
