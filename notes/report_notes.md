@@ -130,7 +130,7 @@ other kappa, E1 at d = 20, E3 at d = 5, A8c-e. Figures 1-5, `numbers.tex` (122 m
   (aligned replicate minus aligned, 99% CI): all six CIs contain 0 (check passes, no flags). Rotation penalty Delta_rot,
   median [95% CI]: ARD-BO 0.85 [0.71, 0.98]; iso-BO -0.09 [-0.25, 0.18]; TuRBO 1.56 [1.27, 1.63]; CMA-ES 0.16 [0.00, 0.41];
   sep-CMA-ES 0.87 [0.72, 1.07]; Sobol -0.01 [-0.17, 0.10]. Interactions: ARD minus iso 0.89 [0.54, 1.20]; sep-CMA minus
-  CMA 0.77 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15 (`configs/e2_cma_sigma015.toml`, reported as
+  CMA 0.76 [0.62, 0.93]; both CIs exclude 0. Secondary CMA-ES sigma0 = 0.15 (`configs/e2_cma_sigma015.toml`, reported as
   secondary only): Delta_rot 0.32 [-0.06, 0.61], interaction with sep-CMA 0.62 [0.45, 0.83].
 - **Descriptive table (not pre-registered).** Median log10 gap at n = 500 with the IQR over 30 seeds
   (`e2_primary_descriptive.csv`, `code/descriptive_e2.py`):
@@ -160,7 +160,7 @@ other kappa, E1 at d = 20, E3 at d = 5, A8c-e. Figures 1-5, `numbers.tex` (122 m
 - d = 20, d_eff = 2, aligned vs rotated, 500 evaluations, 20 seeds; rho and rank correlation at checkpoints
   (`configs/e2_lowdim.toml`). Prediction: rho >= 0.5 aligned, <= 0.2 rotated at n = 200 (guess).
 - **Results at n = 200** (`e2_lowdim_rho.csv`, `code/analyze_lowdim.py`; descriptive, 20 runs per instance,
-  median [Q1, Q3]). rho of ARD-BO: aligned 0.998 [0.997, 0.999] (20 of 20 runs >= 0.5); rotated 0.168 [0.143, 0.183]
+  median [Q1, Q3]). rho of ARD-BO: aligned 0.998 [0.997, 0.999] (20 of 20 runs >= 0.5); rotated 0.168 [0.143, 0.182]
   (17 of 20 runs <= 0.2; isotropic baseline 0.1). GP rank correlation: ARD-BO aligned 0.9999 [0.9996, 0.9999], rotated
   0.44 [0.35, 0.47]; iso-BO aligned 0.34 [0.31, 0.40], rotated 0.38 [0.29, 0.40]. Spread of rho across the 5 multi-start
   fits (median over runs): 0.021 aligned, 0.013 rotated.
@@ -211,7 +211,7 @@ other kappa, E1 at d = 20, E3 at d = 5, A8c-e. Figures 1-5, `numbers.tex` (122 m
 - **Censored seeds:** 1 CMA-ES long run never reached BO's own final gap (d = 5 Rosenbrock); at the absolute levels 1e-1,
   1e-2, 1e-4, 1 run at d = 5 and d = 10 Rosenbrock and 2 at d = 8. They are listed per seed in `cost_censored.csv` with the
   cause and whether BO reached the level.
-- **Overhead** of ARD-BO (mean method seconds per evaluation over the run, ellipsoid): 0.79, 1.10, 1.87, 4.10, 10.65 s for
+- **Overhead** of ARD-BO (median over runs of method seconds per evaluation, ellipsoid): 0.79, 1.10, 1.87, 4.10, 10.65 s for
   d = 2, 3, 5, 8, 10 (`e1_overhead.csv`; 7 workers). CMA-ES is far below 1 ms.
 - Caveats: S for the ellipsoid has a CI containing 0. The E1 budgets differ per d, so the "final budget" rows mix d and
   budget.
