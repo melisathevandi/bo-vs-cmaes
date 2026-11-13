@@ -1,5 +1,7 @@
 # Bayesian optimisation vs CMA-ES: when does each win?
 
+Group: final_project 31
+
 Author: Melisa Abigail Thevandi (see [authors.md](authors.md)). Repository: https://github.com/melisathevandi/bo-vs-cmaes
 
 Code, configurations, aggregated and raw results, and the report source for a DSA4212 study.
