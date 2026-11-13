@@ -24,6 +24,7 @@
 \newcommand{\Drot}{\Delta_{\mathrm{rot}}}
 \renewcommand{\dbltopfraction}{0.9}\renewcommand{\topfraction}{0.9}\renewcommand{\textfraction}{0.07}
 \renewcommand{\dblfloatpagefraction}{0.8}\renewcommand{\floatpagefraction}{0.8}\setcounter{dbltopnumber}{4}
+\renewcommand{\bibfont}{\small}\setlength{\bibsep}{1pt}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -46,13 +47,22 @@
 % tables: none
 % macros: none
 Gaussian-process Bayesian optimisation (BO) and CMA-ES are two standard methods for expensive black-box minimisation
-\citep{frazier2018tutorial,hansen2016tutorial}. A comparison of high-dimensional BO methods
-with vanilla BO and CMA-ES on the 24 BBOB functions found BO better than CMA-ES for limited evaluation budgets, with trust
-regions as the most promising improvement of BO \citep{santoni2024hdbo}; standard BO also works much better in high
-dimensions than previously thought when the lengthscale prior is scaled with the dimension \citep{hvarfner2024vanilla}.
-This study asks which problem properties decide the winner at a given budget (axis alignment, dimension relative to
-budget, multimodality and evaluation cost), and whether BO's advantage reflects problem--method fit rather than general
+\citep{frazier2018tutorial,hansen2016tutorial}. A comparison of high-dimensional BO methods with vanilla BO and CMA-ES
+on the 24 BBOB functions found BO better than CMA-ES for limited evaluation budgets, with trust regions as the most
+promising improvement of BO \citep{santoni2024hdbo}; standard BO also works much better in high dimensions than
+previously thought when the lengthscale prior is scaled with the dimension \citep{hvarfner2024vanilla}. This study asks
+which problem properties decide the winner at a given budget (axis alignment, dimension relative to budget,
+multimodality and evaluation cost), and whether BO's advantage reflects problem--method fit rather than general
 superiority.
+
+% CHECK: theory summarised from the tutorials and predictions.md (H5 derivation); attributed only as background.
+Two pieces of theory frame the hypotheses. CMA-ES uses only the ranking of candidates and adapts a full covariance
+matrix, so without bounds it is invariant to increasing transformations of $f$ and to rotations of the search space;
+its covariance learning rates fall roughly as $1/d^2$, so learning the geometry of a problem should cost a number of
+evaluations that grows roughly quadratically with $d$ (background in \citep{hansen2016tutorial}). A Gaussian process with
+an ARD kernel measures distance with one lengthscale per coordinate, a diagonal metric: it can adapt to scales along the
+axes but not along rotated directions, whereas an isotropic kernel is rotation invariant but cannot adapt to scales.
+Separable CMA-ES has the same diagonal restriction on the CMA-ES side \citep{ros2008sepcma}.
 
 The hypotheses were committed before the main runs (\texttt{predictions.md}).
 \textbf{H1}: BO's lead over CMA-ES at a fixed number of evaluations per dimension shrinks as the dimension grows.
@@ -61,15 +71,12 @@ rotation; isotropic BO and full CMA-ES are approximately rotation invariant.
 \textbf{H3}: the chance of finding a narrow global basin falls with its width; restarts (IPOP) help CMA-ES at larger
 budgets; UCB beats LogEI on the narrowest basins.
 \textbf{H4}: the break-even evaluation cost $c^*$, above which BO is faster in wall-clock time, rises with the budget.
-\textbf{H5}: the evaluations CMA-ES needs to learn the geometry scale as $d^\alpha$ with $\alpha$ below 2 at finite $d$,
-as derived from its learning rates. A follow-up on TuRBO's rotation penalty was registered after the first results and
-before its own runs.
-
-Later changes are dated amendments or addenda committed before the affected numbers were computed. H1 names
-$\kappa=10^4$, but the E1 configurations use $\kappa=100$; an amendment records that H1 was tested at $\kappa=100$ and
-that its $d=20$ part was not run, and a $\kappa=10^4$ supplement was added after the E1 analysis. Before any E2 result was
-read, the rule ``stop if the aligned-replicate CI excludes 0'' was replaced by a 99\% interval with a tolerance, and the
-follow-up gained noise-floor runs before its runs.
+\textbf{H5}: the evaluations CMA-ES needs to learn the geometry scale as $d^\alpha$, with $\alpha$ below 2 at finite $d$
+as derived from pycma's learning rates. A follow-up on TuRBO's rotation penalty was registered after the first results
+and before its runs. Later changes are dated amendments or addenda committed before the affected numbers were computed:
+H1 names $\kappa=10^4$ but E1 was configured with $\kappa=100$, so an amendment records that H1 was tested at $\kappa=100$
+without its $d=20$ part, and a $\kappa=10^4$ supplement was added after the E1 analysis; before any E2 result was read,
+the E2 stopping rule was replaced by a 99\% noise-floor check with a tolerance; the follow-up gained noise-floor runs.
 
 \section{Methods and experimental design}
 % sources: configs/*.toml, code/methods/*.py, code/problems.py, analysis_addendum_*.md
@@ -79,21 +86,21 @@ follow-up gained noise-floor runs before its runs.
 \paragraph{Problems.}
 All problems are defined on $[0,1]^d$. The ellipsoid is $f(x)=\sum_i \kappa^{(i-1)/(d-1)} y_i^2$ with $y=R(x-x^*)$,
 aligned ($R=I$) or rotated by a random orthogonal $R$ with the same optimum; an independent \emph{aligned replicate} gives
-the noise floor of a rotation effect. The other functions are
-a shifted Rosenbrock function, a quadratic in $d=20$ that depends on only $d_{\mathrm{eff}}=2$ directions, and a
-two-dimensional decoy-basin function $f=\min(B,D)$ with a broad basin $B\geq1$ and a narrow global basin of width $w$, so
-that $f<1$ exactly within $w$ of the narrow optimum.
+the noise floor of a rotation effect. The other functions are a shifted Rosenbrock function, a quadratic in $d=20$ that
+depends on only $d_{\mathrm{eff}}=2$ directions, and a two-dimensional decoy-basin function $f=\min(B,D)$ with a broad
+basin $B\geq1$ and a narrow global basin of width $w$, so that $f<1$ exactly within $w$ of the narrow optimum.
 
 \paragraph{Methods.}
 BO uses a BoTorch Gaussian process with a Mat\'ern-5/2 kernel, ARD or isotropic, the dimension-scaled lengthscale prior
 of Hvarfner et al.~\citep{hvarfner2024vanilla} and LogEI, which reformulates expected improvement to avoid numerically
 vanishing values and gradients \citep{ament2023logei} (UCB with $\beta=4$ in E3). Hyperparameters are refitted from
-defaults at every iteration up to $n=100$ and every ten iterations afterwards (checked in the Appendix). TuRBO-1 uses local models in a
-trust region scaled by the ARD lengthscales, because global-model BO is often not competitive on difficult
-high-dimensional problems \citep{eriksson2019turbo}; its settings are the reference defaults. CMA-ES (pycma) starts from a
-uniform random point with $\sigma_0=0.3$ of the box width, default population and pycma's bound handling; sep-CMA-ES
-restricts the covariance to a diagonal, which gives linear complexity but is not rotation invariant \citep{ros2008sepcma};
-IPOP restarts with a doubled population. Sobol sampling is the model-free reference (Table~\ref{tab:design}).
+defaults at every iteration up to $n=100$ and every ten iterations afterwards (checked in the Appendix). TuRBO-1 uses
+local models in a trust region scaled by the ARD lengthscales, because global-model BO is often not competitive on
+difficult high-dimensional problems \citep{eriksson2019turbo}; its settings are the reference defaults. CMA-ES (pycma)
+starts from a uniform random point with $\sigma_0=0.3$ of the box width, default population and pycma's bound handling;
+sep-CMA-ES restricts the covariance to a diagonal, which gives linear complexity but is not rotation invariant
+\citep{ros2008sepcma}; IPOP restarts with a doubled population. Sobol sampling is the model-free reference
+(Table~\ref{tab:design}).
 
 \begin{table*}[t]\centering\footnotesize\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.11\textwidth}p{0.25\textwidth}p{0.09\textwidth}p{0.12\textwidth}p{0.07\textwidth}p{0.29\textwidth}@{}}
@@ -101,7 +108,7 @@ IPOP restarts with a doubled population. Sobol sampling is the model-free refere
 Experiment & Problems & $d$ & Budget (evaluations) & Seeds & Methods \\
 \midrule
 E2 primary & ellipsoid $\kappa=10^4$: aligned, rotated, aligned replicate & 10 & 500 & 0--29 & ARD-BO, iso-BO, TuRBO, CMA-ES, sep-CMA-ES, Sobol \\
-E2 secondary & as E2 primary & 10 & 500; 10{,}000 & 0--29 & CMA-ES with $\sigma_0=0.15$; CMA-ES long runs \\
+E2 secondary & E2 primary instances (long runs: aligned and rotated only) & 10 & 500; 10{,}000 & 0--29 & CMA-ES with $\sigma_0=0.15$; CMA-ES long runs \\
 E2 low dimension & quadratic, $d_{\mathrm{eff}}=2$: aligned, rotated & 20 & 500 & 0--19 & ARD-BO, iso-BO, TuRBO, CMA-ES, Sobol \\
 E1 & rotated ellipsoid $\kappa=100$; shifted Rosenbrock & 2, 3, 5, 8, 10 & 200, 200, 400, 640, 1000 & 0--19 & ARD-BO, CMA-ES, Sobol \\
 E1 long runs & as E1 & 2, 3, 5, 8, 10 & up to 50{,}000 & 0--19 & CMA-ES (until pycma terminates) \\
@@ -121,10 +128,10 @@ points.}
 
 \paragraph{Fair comparison.}
 All methods see the same instances for a seed, and all comparisons are paired by seed. BO and TuRBO start from $2d$
-Sobol points that count against the budget; CMA-ES starts from one random point. Tuning effort is equal: six configurations per method (CMA-ES: $\sigma_0\times$ population; BO: initial design $\times$
-Mat\'ern smoothness) on held-out seeds of two pilot problems, with a rule fixed in advance to keep the default unless an
-alternative is better on both problems with a paired CI excluding 0. No alternative met the rule, so all defaults were
-kept. The recommendation is the best evaluated point.
+Sobol points that count against the budget; CMA-ES starts from one random point. Tuning effort is equal: six
+configurations per method (CMA-ES: $\sigma_0\times$ population; BO: initial design $\times$ Mat\'ern smoothness) on
+held-out seeds of two pilot problems, under a rule fixed in advance (keep the default unless an alternative is better on
+both problems with a paired CI excluding 0); all defaults were kept. The recommendation is the best evaluated point.
 
 \paragraph{Metric, cost and statistics.}
 Performance is the $\log_{10}$ gap $f(\text{best so far})-f^*$ on the true objective, floored at $10^{-12}$, with budgets
@@ -150,44 +157,53 @@ quadratic in $d=20$ with two relevant directions, aligned (solid) or rotated (da
 gap. (b) Relevance ratio $\rho$ of the fitted ARD kernel (share of kernel sensitivity in the relevant directions;
 dotted: isotropic value $d_{\mathrm{eff}}/d$). (c) Spearman correlation between GP posterior mean and true function
 near the incumbent. Bands: IQR over seeds.}\label{fig:lowdim}\end{figure*}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_e2}}\caption{E2 primary ($d=10$,
-$\kappa=10^4$, 500 evaluations, 30 paired seeds). $\Drot$: median paired difference in $\log_{10}$ gap, rotated minus
-aligned (95\% bootstrap CI). Noise floor: aligned replicate minus aligned (99\% CI, pre-registered check). Interactions:
-difference of the two methods' $\Drot$; H2 requires both positive with CIs excluding 0.}\label{tab:e2}\end{table*}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_lowdim}}\caption{E2 low effective dimension at
-$n=200$ ($d=20$, $d_{\mathrm{eff}}=2$, 20 runs per instance): ARD-BO relevance ratio $\rho$ with the pre-registered
-threshold and the runs meeting it, and Spearman rank correlation of the GP posterior mean with the true function, median
-[IQR]. The isotropic value of $\rho$ is $d_{\mathrm{eff}}/d$.}\label{tab:lowdim}\end{table*}
+\begin{table*}[t]\centering\input{generated/tab_e2}\caption{E2 primary ($d=10$, $\kappa=10^4$, 500 evaluations, 30
+paired seeds). $\Drot$: median paired difference in $\log_{10}$ gap, rotated minus aligned (95\% bootstrap CI). Noise
+floor: aligned replicate minus aligned (99\% CI, pre-registered check). Interactions: difference of the two methods'
+$\Drot$; H2 requires both positive with CIs excluding 0.}\label{tab:e2}\end{table*}
+\begin{table*}[t]\centering\input{generated/tab_lowdim}\caption{E2 low effective dimension at $n=200$ ($d=20$,
+$d_{\mathrm{eff}}=2$, 20 runs per instance): ARD-BO relevance ratio $\rho$ with the pre-registered threshold and the runs
+meeting it, and Spearman rank correlation of the GP posterior mean with the true function, median [IQR]. The isotropic
+value of $\rho$ is $d_{\mathrm{eff}}/d$.}\label{tab:lowdim}\end{table*}
 
-\paragraph{Question and setup.}
-Does the ARD kernel exploit axis alignment and lose it under rotation, as sep-CMA-ES does? The primary endpoint was fixed
-in advance (Table~\ref{tab:design}); a $d=20$ problem with two relevant directions shows what the kernel learns.
+\paragraph{Question and result.}
+Does the ARD kernel exploit axis alignment and lose it under rotation, as sep-CMA-ES does? Both pre-registered interactions are positive with CIs excluding 0 (Table~\ref{tab:e2}, Figure~\ref{fig:e2}b): ARD-BO
+minus isotropic BO $\numinteractionBO$ and sep-CMA-ES minus CMA-ES $\numinteractionCMA$ decades. The axis-aligned methods
+pay the penalty (ARD-BO $\Drot=\numdrotboardrotated$, sep-CMA-ES $\numdrotsepcmarotated$, TuRBO $\numdrotturborotated$);
+isotropic BO ($\numdrotboisorotated$) and Sobol ($\numdrotsobolrotated$) do not, and full CMA-ES pays a small one
+($\numdrotcmarotated$). Rotation shrinks BO's lead without reversing it (Figure~\ref{fig:e2}a): the median final
+$\log_{10}$ gap of ARD-BO rises from $\numgapmedboardaligned$ to $\numgapmedboardrotated$, against CMA-ES at
+$\numgapmedcmaaligned$ and $\numgapmedcmarotated$ and isotropic BO at $\numgapmedboisoaligned$ on both instances.
 
-\paragraph{Result.}
-Both pre-registered interactions are positive with CIs excluding 0 (Table~\ref{tab:e2}, Figure~\ref{fig:e2}b): ARD-BO minus
-isotropic BO $\numinteractionBO$ and sep-CMA-ES minus CMA-ES $\numinteractionCMA$ decades. Rotation costs ARD-BO
-$\Drot=\numdrotboardrotated$, sep-CMA-ES $\numdrotsepcmarotated$ and TuRBO $\numdrotturborotated$; isotropic BO
-($\numdrotboisorotated$) and Sobol ($\numdrotsobolrotated$) are unaffected, and full CMA-ES has a small penalty
-($\numdrotcmarotated$). No noise floor was flagged. Rotation shrinks BO's lead without reversing the ranking
-(Figure~\ref{fig:e2}a): the median final $\log_{10}$ gap of ARD-BO rises from $\numgapmedboardaligned$ to
-$\numgapmedboardrotated$ and that of TuRBO from $\numgapmedturboaligned$ to $\numgapmedturborotated$, while CMA-ES is at
-$\numgapmedcmaaligned$ and $\numgapmedcmarotated$, isotropic BO at $\numgapmedboisoaligned$ on both instances and Sobol at
-$\numgapmedsobolaligned$. On the low-effective-dimension problem (Figure~\ref{fig:lowdim}, Table~\ref{tab:lowdim}) the
-relevance ratio of ARD-BO at $n=200$ is $\numrhontwohundredaligned$ when aligned and $\numrhontwohundredrotated$ when
-rotated, close to the isotropic value, and the GP ranks candidates almost perfectly when aligned (rank correlation
-$\numrankcorrntwohundredaligned$) but not when rotated ($\numrankcorrntwohundredrotated$). Both thresholds on $\rho$ hold.
+\paragraph{Mechanism.}
+The low-effective-dimension problem shows the cause inside the model (Figure~\ref{fig:lowdim}, Table~\ref{tab:lowdim}).
+At $n=200$ the relevance ratio of ARD-BO is $\numrhontwohundredaligned$ when aligned (the irrelevant axes are switched
+off) but $\numrhontwohundredrotated$ when rotated, close to the isotropic value, and the GP's rank correlation falls from
+$\numrankcorrntwohundredaligned$ to $\numrankcorrntwohundredrotated$, no better than isotropic BO; both pre-registered
+thresholds on $\rho$ hold. The penalty is a loss of model quality that the diagonal metric predicts.
+
+\paragraph{Alternative explanations.}
+(i) The rotated instance might simply be harder: ruled out for search without a learned metric, since Sobol and
+isotropic BO have penalties consistent with 0. (ii) The particular instance draw: the replicate noise floors contain 0 for
+every method (e.g.\ ARD-BO $\numdrotboardreplicate$, sep-CMA-ES $\numdrotsepcmareplicate$, TuRBO
+$\numdrotturboreplicate$). (iii) For full CMA-ES the box is a plausible cause: an audit without bounds (E0, Appendix)
+found no penalty, one with bounds did.
+% CHECK: no experiment separates a box effect from the kernel effect for ARD-BO; this is stated as untested.
+Whether the box also adds to ARD-BO's penalty was not tested.
+
+\paragraph{Robustness.}
+The same ordering holds on a second, structurally different problem (low effective dimension, $d=20$).
+% CHECK: from results/summary/e2_primary.csv (secondary_interaction row); no macro.
+With $\sigma_0=0.15$, the CMA-ES setting that won one pilot problem in the sensitivity grid, the sep-CMA-ES interaction
+stays positive with a CI excluding 0. Only one budget ($n=500$) and one condition number were run in E2.
 
 \paragraph{Interpretation.}
-H2 is supported. The ARD kernel is a diagonal metric that cannot represent an off-axis subspace, so its aligned advantage
-is one of fit, not of method.
+H2 is supported, and the result matches theory: methods whose metric or covariance is diagonal are not rotation invariant
+\citep{ros2008sepcma}, and their aligned advantage is one of fit, not of method.
 % CHECK: comparison of medians only; no paired test of BO against CMA-ES on the rotated instance was pre-registered.
-At this budget every BO variant nevertheless stays ahead of both CMA-ES variants after rotation.
-
-\paragraph{Caveat.}
-All E2 runs are bounded. A rotation audit of CMA-ES (E0, Appendix) found its invariance intact without bounds but not with
-them, so the CMA-ES part of H2 was informed by E0 rather than tested independently.
+At this budget every BO variant nevertheless stays ahead of both CMA-ES variants after rotation;
 % CHECK: qualitative statement from results/summary/e2_cma_long_reach.csv (no macro).
-CMA-ES is far from converged at 500 evaluations: long runs reach BO's final gap only after several times that budget.
+CMA-ES is far from converged at 500 evaluations, and long runs reach BO's final gap only after several times that budget.
 
 \section{Dimension, budget and cost (E1, H1, H4, H5)}
 % figures: fig3_e1_h5 (regime map, H1 statistic at both kappa, CMA-ES learning time)
@@ -200,28 +216,26 @@ difference at 20 evaluations per dimension (95\% bootstrap CI), for both E1 prob
 (d) CMA-ES learning time $T$ (evaluations until the condition number of $C^{1/2}HC^{1/2}$ falls below 10): median and IQR,
 least-squares fits over all $d$ and $d\geq10$, and predicted slopes 1.71 (through the all-$d$ centroid), 1.87 and 2
 (through the $d\geq10$ centroid).}\label{fig:e1}\end{figure*}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_cstar}}\caption{Break-even cost $c^*$ (seconds
-per evaluation) of ARD-BO against CMA-ES on the E1 problems, at each BO run's own final gap (budgets 200, 200, 400, 640,
-1000 for $d=2,3,5,8,10$): median and IQR over the seeds where CMA-ES needs more evaluations than BO, using the CMA-ES long
-runs. BO is faster in total time when an evaluation costs more than $c^*$.}\label{tab:cstar}\end{table*}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_h5}}\caption{H5: fitted exponent $\hat\alpha$ of
-CMA-ES learning time against dimension (least squares on $\log T$ against $\log d$, 95\% bootstrap CI over seeds within
-each $d$) for thresholds $\tau$ on the condition number. Primary endpoint: $\tau=10$, $d\geq10$, predicted 1.87. Runs
-without a measured $T$ are excluded.}\label{tab:h5}\end{table*}
+\begin{table*}[t]\centering\input{generated/tab_cstar}\caption{Break-even cost $c^*$ (seconds per evaluation) of ARD-BO
+against CMA-ES on the E1 problems, at each BO run's own final gap (budgets 200, 200, 400, 640, 1000 for $d=2,3,5,8,10$):
+median and IQR over the seeds where CMA-ES needs more evaluations than BO, using the CMA-ES long runs. BO is faster in
+total time when an evaluation costs more than $c^*$.}\label{tab:cstar}\end{table*}
+\begin{table*}[t]\centering\input{generated/tab_h5}\caption{H5: fitted exponent $\hat\alpha$ of CMA-ES learning time
+against dimension (least squares on $\log T$ against $\log d$, 95\% bootstrap CI over seeds within each $d$) for
+thresholds $\tau$ on the condition number. Primary endpoint: $\tau=10$, $d\geq10$, predicted 1.87. Runs without a
+measured $T$ are excluded.}\label{tab:h5}\end{table*}
 
 \paragraph{Question and setup.}
 How does BO's lead depend on dimension and budget, when does its overhead pay off, and how fast does CMA-ES learn the
-geometry? E1 compares ARD-BO, CMA-ES and Sobol for $d=2$ to 10 (Table~\ref{tab:design}). The H1 statistic, fixed before the analysis, is $D(d)$, the median paired difference
-BO minus CMA-ES at 20 evaluations per dimension, and $S=D(10)-D(2)$: $S\geq0.5$ supports the registered size, $S\leq0$
-refutes H1, and values in between support the direction only. H5 uses separate unbounded CMA-ES runs.
+geometry? The H1 statistic, fixed before the analysis, is $D(d)$, the median paired difference BO minus CMA-ES at 20
+evaluations per dimension, and $S=D(10)-D(2)$: $S\geq0.5$ supports the registered size, $S\leq0$ refutes H1, values in
+between support the direction only.
 
 \paragraph{Result (H1).}
-BO is ahead at 20 evaluations per dimension at every $d$ (Figure~\ref{fig:e1}c). On the ellipsoid
-$D(d)=\numHoneellipsoidDtwo$, $\numHoneellipsoidDthree$, $\numHoneellipsoidDfive$, $\numHoneellipsoidDeight$ and
-$\numHoneellipsoidDten$ for $d=2,3,5,8,10$, so $S=\numHoneSellipsoid$: direction only, with a CI containing 0. On Rosenbrock
-$D(2)=\numHonerosenbrockDtwo$ and $D(10)=\numHonerosenbrockDten$, so $S=\numHoneSrosenbrock$, meeting the registered size.
-The $\kappa=10^4$ supplement gives $D=\numHoneKfourDtwo$, $\numHoneKfourDfive$ and $\numHoneKfourDten$ at $d=2,5,10$ and
-$S=\numHoneSkfour$. In the regime maps (Figure~\ref{fig:e1}a, b) CMA-ES closes the gap later in the run. At the final budget CMA-ES is ahead on Rosenbrock from $d=8$
+BO is ahead at 20 evaluations per dimension at every $d$ (Figure~\ref{fig:e1}c), but less so at $d=10$. On the ellipsoid
+$D$ moves from $\numHoneellipsoidDtwo$ at $d=2$ to $\numHoneellipsoidDten$ at $d=10$, so $S=\numHoneSellipsoid$: direction
+only, with a CI containing 0. On Rosenbrock $S=\numHoneSrosenbrock$ and in the $\kappa=10^4$ supplement $S=\numHoneSkfour$,
+both meeting the registered size. At the final budget the picture changes: CMA-ES is ahead on Rosenbrock from $d=8$
 ($\numHonefinalrosenbrockeight$ at $d=8$, $\numHonefinalrosenbrockten$ at $d=10$); on the ellipsoid the two are level at
 $d=10$ ($\numHonefinalellipsoidten$) and CMA-ES is ahead at $d=2$ ($\numHonefinalellipsoidtwo$).
 
@@ -229,28 +243,44 @@ $d=10$ ($\numHonefinalellipsoidten$) and CMA-ES is ahead at $d=2$ ($\numHonefina
 BO's overhead on the ellipsoid grows from $\numoverheadboardellipsoidtwo$\,s per evaluation at $d=2$ to
 $\numoverheadboardellipsoidten$\,s at $d=10$ (Rosenbrock: $\numoverheadboardrosenbrocktwo$\,s and
 $\numoverheadboardrosenbrockten$\,s), against well under a millisecond for CMA-ES. The median $c^*$ on the ellipsoid rises
-from \numcstarellipsoidtwo\,s at $d=2$ to \numcstarellipsoidten\,s at $d=10$ (Table~\ref{tab:cstar}), with a Spearman
-correlation with the budget of $\numHfourspearmanellipsoid$ (Rosenbrock $\numHfourspearmanrosenbrock$): H4 is supported. On
-Rosenbrock at $d=10$, $c^*$ exists for only $\numcstardefinedrosenbrockten$ of 20 seeds, because CMA-ES usually reaches
-BO's final gap with fewer evaluations; there is then no cost at which BO is faster.
+from \numcstarellipsoidtwo\,s to \numcstarellipsoidten\,s (Table~\ref{tab:cstar}), with a Spearman correlation with the
+budget of $\numHfourspearmanellipsoid$ (Rosenbrock $\numHfourspearmanrosenbrock$): H4 is supported. On Rosenbrock at
+$d=10$, $c^*$ exists for only $\numcstardefinedrosenbrockten$ of 20 seeds, because CMA-ES usually reaches BO's final gap
+with fewer evaluations; there is then no cost at which BO is faster.
 
 \paragraph{Result (H5).}
 The fitted exponent is $\hat\alpha=\numalphadgeten$ for $d\geq10$ and $\numalphaall$ over all $d$ (Figure~\ref{fig:e1}d,
-Table~\ref{tab:h5}). The registered value 1.87 lies outside the $d\geq10$ interval, so H5 is not supported; the interval
-contains 2.
+Table~\ref{tab:h5}). The registered value 1.87 lies outside the $d\geq10$ interval, so H5 is not supported.
+
+\paragraph{Mechanism and alternatives.}
+The regime maps (Figure~\ref{fig:e1}a, b) show that BO's lead is largest after a few evaluations per dimension and then
+shrinks as CMA-ES adapts. H5 argues against the simplest explanation of H1:
+% CHECK: hypothesis; the E1 problems (kappa = 100, Rosenbrock, bounded) differ from the H5 problem (kappa = 1e4, unbounded).
+if CMA-ES's learning cost grows faster than the $20d$ evaluations allowed, its lag alone would widen BO's lead with $d$,
+so the shrinking lead must come at least partly from BO's side, plausibly because a GP needs more points per dimension to
+model the function as $d$ grows (a hypothesis). On the ellipsoid $D(d)$ is not monotone: the lead grows from
+$\numHoneellipsoidDtwo$ at $d=2$ to $\numHoneellipsoidDfive$ at $d=5$ and then shrinks to $\numHoneellipsoidDeight$ and
+$\numHoneellipsoidDten$, which is consistent with two opposing effects but does not identify them. For H4 the mechanism is
+visible directly: GP fitting and acquisition costs grow with $n$ and $d$, while CMA-ES's cost stays negligible. The
+alternative that $c^*$ rises only because E1 budgets grow with $d$ cannot be excluded, since budget and dimension change
+together.
+
+\paragraph{Robustness.}
+H1's direction holds on all three problem sets but its size depends on the problem, so the quantitative guess is not
+robust. H4 holds for both problems and,
+% CHECK: from results/summary/e1_h4.csv (median-target rows); no macro for those correlations.
+with a weaker correlation, under the alternative target (the median BO final gap). H5 is sensitive to the threshold
+$\tau$ (Table~\ref{tab:h5}): the $d\geq10$ exponent lies above 1.87 for $\tau=10$ and $\tau=100$ but below it for
+$\tau=3$, which rests on few runs, so the learning-rate prediction is refuted in both directions depending on how
+``learned'' is defined.
 
 \paragraph{Interpretation.}
-BO's advantage is largest early and at low dimension and is eroded jointly by dimension, budget and evaluation cost. The
-learning-rate argument predicts CMA-ES's
-geometry learning only roughly;
+BO's advantage is largest early and at low dimension and is eroded by dimension, budget and evaluation cost together.
+The learning-rate argument \citep{hansen2016tutorial} predicts CMA-ES's geometry learning only roughly;
 % CHECK: explanation not tested by any experiment in this study.
-step-size adaptation and the evolution path, which the derivation ignores, may explain the difference.
-
-\paragraph{Caveat.}
-E1 budgets grow with $d$, so budget and dimension are confounded at the final budget and in H4. The $\kappa=10^4$ point at
-$d=10$ comes from the E2 runs (read at $n=200$), and $d=3$ and 8 were not run at $\kappa=10^4$. H5 excludes runs that
-reached machine precision before the threshold (half the runs at $d=40$, all at $d=60$ and 80), so its fits rest on
-$d\leq40$.
+step-size adaptation and the evolution path, which the derivation ignores, may explain the difference. Caveats: the
+$\kappa=10^4$ point at $d=10$ is read from E2 at $n=200$; H5 excludes runs that reached machine precision first (half at
+$d=40$, all at $d=60$ and 80), so its fits rest on $d\leq40$.
 
 \section{Multimodality (E3, H3)}
 % figures: fig4_e3 (P(success) against basin width)
@@ -258,36 +288,49 @@ $d\leq40$.
 % macros: eprob*, ethree*
 \begin{figure}[t]\centering\includegraphics[width=\linewidth]{fig4_e3}\caption{E3, decoy-basin function in $d=2$:
 probability that the best point lies in the narrow global basin against its width $w$, 95\% Wilson intervals, 30 seeds,
-at 200 (a) and 2000 evaluations (b; CMA-ES, IPOP, Sobol).}\label{fig:e3}\end{figure}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_e3}}\caption{E3 success probabilities: fraction
-of 30 seeds whose best point lies in the narrow global basin of the decoy-basin function ($d=2$), by budget $n$ and width
-$w$. BO is not run at 2000 evaluations.}\label{tab:e3}\end{table*}
+at 200 (a) and 2000 evaluations (b; CMA-ES, IPOP, Sobol). Table~\ref{tab:e3} lists the values.}\label{fig:e3}\end{figure}
+\begin{table*}[t]\centering\input{generated/tab_e3}\caption{E3 success probabilities: fraction of 30 seeds whose best
+point lies in the narrow global basin of the decoy-basin function ($d=2$), by budget $n$ and width $w$. BO is not run at
+2000 evaluations.}\label{tab:e3}\end{table*}
+\begin{table*}[t]\centering\input{generated/tab_ablation}\caption{TuRBO ablation ($d=10$, $\kappa=10^4$, 500
+evaluations, 30 paired seeds): median final $\log_{10}$ gap, $\Drot$ and aligned-replicate noise floor (95\% bootstrap
+CIs). Default TuRBO scales its trust region by the ARD lengthscales; the variants use a cubic region.}\label{tab:ablation}\end{table*}
 
-\paragraph{Question and setup.}
+% tab_ablation (Section 6) and tab_predictions (Section 7) are defined here so that these two-column floats can appear
+% before the references.
+\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_predictions}}\caption{Pre-registered statistics
+and outcomes under the rules in \texttt{predictions.md} and the addenda (medians with 95\% bootstrap CIs unless marked
+IQR; H4: Spearman correlation of median $c^*$ with budget; H1 rows: see the amendment in Section~1).}\label{tab:predictions}\end{table*}
+
+\paragraph{Question and result.}
 Does a narrow global basin next to a broad decoy defeat the methods, and do exploration (UCB) and restarts (IPOP) help?
-The design is in Table~\ref{tab:design}.
+Success falls with width for every method (Figure~\ref{fig:e3}): at 200 evaluations LogEI-BO succeeds on
+$\numeprobtwohundredwidelogei$ of seeds at the widest basin and $\numeprobtwohundrednarrowlogei$ at the narrowest, CMA-ES
+on $\numeprobtwohundredwidecma$ and $\numeprobtwohundrednarrowcma$. UCB does not beat LogEI on the narrowest basin ($\numethreeucbminuslogeinarrow$; both fail
+on every seed), so this part of H3 is not resolved, and on the widest basin LogEI is better
+($\numethreeucbminuslogeiwide$). IPOP beats default CMA-ES at 2000 evaluations, pooled over widths
+$\numethreeipoppooled$, reaching $\numeprobtwothousandnarrowipop$ at the narrowest basin where CMA-ES stays at
+$\numeprobtwothousandnarrowcma$. Unexpectedly, Sobol is best: $\numeprobtwohundredwidesobol$ and
+$\numeprobtwohundrednarrowsobol$ at 200 evaluations and $\numeprobtwothousandnarrowsobol$ at the narrowest basin with
+2000 points.
 
-\paragraph{Result.}
-Success falls with width for every method (Figure~\ref{fig:e3}, Table~\ref{tab:e3}). At 200 evaluations LogEI-BO succeeds
-on $\numeprobtwohundredwidelogei$ of seeds at the widest basin and $\numeprobtwohundrednarrowlogei$ at the narrowest, UCB-BO
-on $\numeprobtwohundredwideucb$ and $\numeprobtwohundrednarrowucb$, CMA-ES on $\numeprobtwohundredwidecma$ and
-$\numeprobtwohundrednarrowcma$. UCB does not beat LogEI on the narrowest basin ($\numethreeucbminuslogeinarrow$; both fail on
-every seed), so this part of H3 is not resolved, and on the widest basin LogEI is better ($\numethreeucbminuslogeiwide$).
-IPOP beats default CMA-ES at 2000 evaluations, pooled over widths $\numethreeipoppooled$, reaching
-$\numeprobtwothousandnarrowipop$ at the narrowest basin where CMA-ES stays at $\numeprobtwothousandnarrowcma$. Unexpectedly,
-Sobol is best: $\numeprobtwohundredwidesobol$ and $\numeprobtwohundrednarrowsobol$ at 200 evaluations and
-$\numeprobtwothousandnarrowsobol$ at the narrowest basin with 2000 points.
+\paragraph{Mechanism and alternatives.}
+% CHECK: based on results/summary/e3_sanity.csv and e3_exploration_check.txt (no macros).
+An implementation error is ruled out by a sanity check: after the initial design almost all BO evaluations sit at the
+bottom of the broad basin, BO's few narrow-width successes come from its initial points, and UCB with a much larger
+weight becomes space filling and succeeds more often. A smooth GP fitted in the bowl has no reason to predict a narrow
+dip, so both acquisition functions exploit the decoy. Default CMA-ES has the same success at 200 and 2000 evaluations
+(Table~\ref{tab:e3}) because it terminates once it has converged into a basin.
+% CHECK: comparison with the coverage expectation is from results/summary/e3_success.csv (column sobol_expected; no macro).
+Sobol's success is at or above the rate expected from independent uniform points, so its advantage is coverage, not search.
+% CHECK: mechanism of the IPOP gain is a hypothesis; restart locations were not analysed.
+IPOP's gain is consistent with restarts sampling new regions with larger populations (a hypothesis; not analysed).
 
 \paragraph{Interpretation.}
-H3 is partly supported: two parts hold and one is not resolved.
-% CHECK: based on results/summary/e3_sanity.csv and e3_exploration_check.txt (no macros).
-A sanity check rules out an implementation error: after the initial design almost all BO evaluations sit at the bottom
-of the broad basin, BO's few narrow-width successes come from its initial points, and UCB with a much larger weight
-becomes space filling and succeeds more often. A smooth GP fitted in the bowl has no reason to predict a narrow dip.
-
-\paragraph{Caveat.}
-Only $d=2$ was run and the UCB weight was not tuned; with $2d=4$ initial points every width is far below the design
-spacing, so the registered statement about the initial design cannot be separated from ``narrow basins are hard''.
+H3 is partly supported: two parts hold and one is not resolved; when the global basin is far narrower than the initial
+design spacing, model-based and local search both lose to space filling at these budgets. Caveats: only $d=2$, an
+untuned UCB weight, and with $2d=4$ initial points the registered design-spacing statement cannot be separated from
+``narrow basins are hard''.
 
 \section{Follow-up: TuRBO rotation penalty}
 % figures: fig5_ablation
@@ -297,40 +340,35 @@ spacing, so the registered statement about the initial design cannot be separate
 instances ($d=10$, $\kappa=10^4$, 500 evaluations, 30 seeds). (a) Median final $\log_{10}$ gap with IQR, aligned (filled)
 and rotated (open). (b) $\Drot$ (filled) and aligned-replicate noise floor (open), median with 95\% CI. ARD-BO, iso-BO and
 Sobol are the E2 runs.}\label{fig:ablation}\end{figure}
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_ablation}}\caption{TuRBO ablation ($d=10$, $\kappa=10^4$, 500 evaluations, 30 paired seeds): median final $\log_{10}$ gap,
-$\Drot$ and aligned-replicate noise floor (95\% bootstrap CIs). Default TuRBO scales its trust region by the ARD
-lengthscales; the variants use a cubic region.}\label{tab:ablation}\end{table*}
-
-\begin{table*}[t]\centering\resizebox{\textwidth}{!}{\input{generated/tab_predictions}}\caption{Pre-registered statistics and outcomes under the rules in \texttt{predictions.md} and the addenda (medians with
-95\% bootstrap CIs unless marked IQR; H4: Spearman correlation of median $c^*$ with budget; H1 rows: see the amendment in
-Section~1).}\label{tab:predictions}\end{table*}
-
-\paragraph{Question and setup.}
+\paragraph{Question and result.}
 Is TuRBO's excess rotation penalty over ARD-BO caused by its ARD-scaled trust region? Two variants, an ARD kernel with a
-cubic region and an isotropic kernel (cubic region), were run on the E2 instances. Registered prediction: for cubic ARD, $\Drot$ in
+cubic region and an isotropic kernel, were run on the E2 instances. Registered prediction: for cubic ARD, $\Drot$ in
 $[0.45,1.25]$ with a CI excluding 0 and a negative contrast with the default; for isotropic, $|\Drot|\leq0.3$ with a CI
-containing 0.
+containing 0. Both are met (Table~\ref{tab:ablation}, Figure~\ref{fig:ablation}): cubic ARD $\Drot=\numablationdrotcubic$
+against $\numablationdrotdefault$ (contrast $\numablationcontrastcubicdefault$), isotropic $\numablationdrotiso$; all
+noise floors contain 0 (e.g.\ cubic ARD $\numablationfloorcubic$).
 
-\paragraph{Result.}
-Both predictions are met (Table~\ref{tab:ablation}, Figure~\ref{fig:ablation}): cubic ARD $\Drot=\numablationdrotcubic$
-against $\numablationdrotdefault$ for the default (contrast $\numablationcontrastcubicdefault$), isotropic
-$\numablationdrotiso$, with noise floors $\numablationfloordefault$, $\numablationfloorcubic$ and $\numablationflooriso$.
-
-\paragraph{Interpretation.}
+\paragraph{Mechanism and alternatives.}
 The penalty does not fall through a better rotated result: the rotated median gap barely changes
 ($\numablationrotateddefault$, $\numablationrotatedcubic$, $\numablationrotatediso$), while the aligned one degrades from
-$\numablationaligneddefault$ to $\numablationalignedcubic$ and $\numablationalignediso$. The ARD-scaled region lets TuRBO
-exploit alignment; removing it removes the aligned advantage rather than the cost of rotation. Caveat: reference
-defaults only, on one problem, dimension and budget.
+$\numablationaligneddefault$ to $\numablationalignedcubic$ and $\numablationalignediso$. The ARD-scaled region is what lets
+TuRBO exploit alignment; removing it removes the aligned advantage, not the cost of rotation, and the isotropic variant
+is invariant only by being uniformly worse, also than isotropic BO. The prediction was met for a different reason than
+intended, a confound identified before the runs.
+% CHECK: link to the trust-region literature goes beyond what this single ablation shows.
+For trust-region BO, which Santoni et al.~\citep{santoni2024hdbo} found the most promising improvement of BO, this suggests that part of
+the gain on axis-aligned benchmarks may come from the axis-scaled region. Caveat: reference defaults only, on one
+problem, dimension and budget.
 
 \section{Predictions and outcomes}
 % figures: none
 % tables: tab_predictions
 % macros: none
-% The tab_predictions float is defined at the start of Section 6 so that the two-column float can appear by this page.
+% The tab_predictions float is defined in Section 5 so that the two-column float can appear before the references.
 Table~\ref{tab:predictions} collects the pre-registered statistics: \textbf{H1} and \textbf{H3} are partly supported,
 \textbf{H2} and \textbf{H4} are supported, \textbf{H5} is not supported, and the \textbf{follow-up} predictions are met
-for a different reason than intended.
+for a different reason than intended. Registered and run designs differ for H1 ($\kappa$, missing $d=20$), H2 (CMA-ES
+part informed by E0) and H3 (design-spacing statement untestable at $d=2$).
 
 \section{Discussion and limitations}
 % figures: none
@@ -338,18 +376,25 @@ for a different reason than intended.
 % macros: none
 \paragraph{What survives.}
 The central claim, that BO's advantage depends on problem--method fit rather than general superiority, holds within the
-tested range: ARD-BO and TuRBO gain most where the problem matches their axis-aligned modelling;
-BO's lead is largest early and at low dimension; its overhead pays off only for expensive evaluations, with a break-even
-cost rising steeply with dimension and budget; and on a deceptive multimodal function no method beat Sobol sampling.
-This qualifies the finding that BO is preferable at limited budgets \citep{santoni2024hdbo}.
+tested range and qualifies the finding that BO is preferable at limited budgets \citep{santoni2024hdbo}: the advantage
+depends on alignment (E2, follow-up), budget per dimension (E1) and evaluation cost (H4), and vanishes on a deceptive
+multimodal function (E3).
+
+\paragraph{Practical guidance.}
+% CHECK: guidance generalises from the tested problems (synthetic, d <= 20, noiseless); each clause cites its evidence.
+Within the tested range: prefer BO for budgets of a few tens of evaluations per dimension when one evaluation costs
+more than $c^*$ (Table~\ref{tab:cstar}), expecting less advantage when the structure is not axis-aligned (E2); prefer
+CMA-ES when evaluations are cheap or the budget per dimension is large (Rosenbrock, $d\geq8$, E1 budgets); if a narrow
+global basin is possible, add space-filling samples or restarts (E3).
 
 \paragraph{Limitations.}
-All functions are synthetic and smooth. CPU time (one BO run at $d=10$ with 1000 evaluations took hours) limited E1 to
-$d\leq10$ instead of the planned $d=20$ and E3 to $d=2$; E2 was not run at $\kappa=1$ or 100. Methods use defaults;
-the sensitivity grids covered two pilot problems with ten seeds, and TuRBO and the UCB weight were not tuned. Box bounds
-break CMA-ES's rotation invariance (E0) by a mechanism not isolated here. The refit check used 10 to 15 seeds, the E3
-exploration check six. Overheads come from one CPU under parallel load; noise was not studied. Next tests: E1 at
-$d=20$, CMA-ES with other bound handling, and BO with a full-metric kernel on rotated problems.
+All functions are synthetic, smooth and noiseless; the conclusions should not be generalised to noisy, discontinuous or
+higher-dimensional problems. CPU time (one BO run at $d=10$ with 1000 evaluations took hours) limited E1 to $d\leq10$
+instead of the planned $d=20$ and E3 to $d=2$; E2 was not run at $\kappa=1$ or 100. The sensitivity grids covered two
+pilot problems with ten seeds; TuRBO and the UCB weight were not tuned. Box bounds break
+CMA-ES's rotation invariance (E0) by a mechanism not isolated here. The refit check used 10 to 15 seeds, the E3
+exploration check six. Overheads come from one CPU under parallel load. Next tests: E1 at $d=20$, CMA-ES with other bound
+handling, and BO with a full-metric kernel on rotated problems.
 
 \bibliographystyle{alpha}
 \bibliography{references}
@@ -367,27 +412,21 @@ $d=20$, CMA-ES with other bound handling, and BO with a full-metric kernel on ro
 % macros: none
 % CHECK: the appendix summarises CSV files that have no macros; numbers are omitted for that reason.
 \paragraph{Correctness anchor.}
-The CMA-ES wrapper evaluates exactly the same points as pycma's reference interface on a bounded test problem, and BO and
-TuRBO meet a median-gap threshold on the Branin function that was fixed in advance (\texttt{results/summary/anchor.csv}).
+The CMA-ES wrapper matches pycma's reference interface point for point; BO and TuRBO meet a pre-set median-gap
+threshold on Branin (\texttt{results/summary/anchor.csv}).
 
 \paragraph{E0: rotation invariance of CMA-ES.}
 On the ellipsoid at $d=10$, CMA-ES's rotation penalty is consistent with zero without bounds and positive, with a CI
-excluding 0, with the unit box (\texttt{results/summary/e0\_rotation.csv}). A first version of this audit drew instance
-and method random numbers from the same stream; its noise floor was non-zero, which exposed the problem. All reported runs
-use independent streams.
+excluding 0, with the unit box (\texttt{results/summary/e0\_rotation.csv}). Its first version exposed a seeding error (instance
+and method shared a random stream) through a non-zero noise floor; all reported runs use independent streams.
 
 \paragraph{Sensitivity grids.}
-A smaller $\sigma_0$ improved CMA-ES on the rotated-ellipsoid pilot but not on Rosenbrock, a doubled population was worse
-in every comparison, and no BO alternative was better on either problem; under the pre-set rule all defaults were kept
-(\texttt{results/summary/sensitivity\_*.csv}).
-% CHECK: sigma0 = 0.15 secondary interaction from results/summary/e2_primary.csv (no macro).
-The $\sigma_0=0.15$ variant, run as a declared secondary variant in E2, keeps the sep-CMA-ES interaction positive with a CI
-excluding 0.
+A smaller $\sigma_0$ helped CMA-ES on the rotated-ellipsoid pilot only, a doubled population was always worse, and no BO
+alternative was better on either problem (\texttt{results/summary/sensitivity\_*.csv}).
 
 \paragraph{GP refit schedule (A4).}
-Warm-started refits reached the same marginal likelihood as cold refits with different lengthscales and gave worse BO
-results on the rotated ellipsoid. Refitting every ten instead of every five iterations after $n=100$ made no detectable
-difference at $d=5$ and $d=10$ under a rule fixed before the runs (\texttt{results/summary/a4\_refit\_check.csv},
-\texttt{a4\_d10\_check.csv}).
+Warm-started refits reached the cold fits' likelihood with different lengthscales and worsened BO on the rotated
+ellipsoid; refitting every ten rather than five iterations after $n=100$ made no detectable difference
+(\texttt{results/summary/a4\_*.csv}).
 
 \end{document}

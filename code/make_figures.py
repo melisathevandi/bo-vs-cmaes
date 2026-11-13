@@ -329,7 +329,7 @@ def fig4_e3():
     lab = {"bo_logei": "ARD-BO LogEI", "bo_ucb": "ARD-BO UCB", "cma": "CMA-ES", "cma_ipop": "IPOP-CMA-ES", "sobol": "Sobol"}
     # single-column figure (W_COL wide): panels stacked, 7-7.5 pt text at print size
     with plt.rc_context(RC_COL):
-        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 3.9), sharex=True, sharey=True)
+        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 3.5), sharex=True, sharey=True)
         for a, src, title in ((ax[0], "short200", "(a) 200 evaluations"), (ax[1], "long2000", "(b) 2000 evaluations")):
             for m in col:
                 r = s[(s.source == src) & (s.method == m)].sort_values("width")
@@ -344,10 +344,11 @@ def fig4_e3():
             a.set_ylabel("P(success)")
             a.set_title(title)
         ax[1].set_xlabel("basin width $w$")
-        ax[0].legend(loc="upper left", ncol=2, columnspacing=0.8, handlelength=1.5)
-        ax[0].set_ylim(-0.05, 1.45)                         # headroom for the legend above the curves
-        ax[0].set_yticks([0, 0.25, 0.5, 0.75, 1])            # probabilities only (no ticks in the headroom)
-        fig.tight_layout()
+        ax[0].set_ylim(-0.05, 1.08)
+        ax[0].set_yticks([0, 0.25, 0.5, 0.75, 1])
+        h, l = ax[0].get_legend_handles_labels()
+        fig.legend(h, l, loc="upper center", ncol=3, columnspacing=0.8, handlelength=1.5, frameon=False)  # above the panels
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
         fig.savefig(FIG / "fig4_e3.pdf", metadata={"CreationDate": None})
         plt.close(fig)
     t = csv("e3_tests.csv")
@@ -384,7 +385,7 @@ def fig5_ablation():
             "turbo_iso": "TuRBO (iso kernel,\ncubic region)"}                  # the names of `nice`, on two lines
     # single-column figure (W_COL wide): panels stacked, 7-7.5 pt text at print size
     with plt.rc_context(RC_COL):
-        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 4.6), sharex=True)
+        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 3.9), sharex=True)
         for off, lab, mark, fill in ((-0.15, "aligned", "o", True), (0.15, "rotated", "s", False)):
             for i, o in enumerate(order):
                 r = tt.loc[o]
