@@ -24,6 +24,7 @@
 \renewcommand{\dbltopfraction}{0.9}\renewcommand{\topfraction}{0.9}\renewcommand{\textfraction}{0.07}
 \renewcommand{\dblfloatpagefraction}{0.8}\renewcommand{\floatpagefraction}{0.8}\setcounter{dbltopnumber}{4}
 \renewcommand{\bibfont}{\small}\setlength{\bibsep}{1pt}
+\raggedbottom
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -141,7 +142,7 @@ $\kappa=10^4$, $d=10$, 500 evaluations, 30 seeds. (a) Median final $\log_{10}$ g
 (open); horizontal lines: Sobol. (b) Paired rotation penalty $\Drot$ (circles) and aligned-replicate noise floor
 (squares), median with 95\% bootstrap CI; positive means worse after rotation.
 Noise-floor intervals are 95\% here; Table~\ref{tab:e2} gives the 99\% pre-registered check.}\label{fig:e2}\end{figure*}
-\begin{figure*}[t]\centering\includegraphics[width=\linewidth]{fig2_e2_lowdim}\caption{E2 low effective dimension:
+\begin{figure*}[t]\centering\includegraphics[width=0.9\textwidth]{fig2_e2_lowdim}\caption{E2 low effective dimension:
 quadratic in $d=20$ with two relevant directions, aligned (solid) or rotated (dashed), 20 seeds. (a) Median $\log_{10}$
 gap. (b) Relevance ratio $\rho$ of the fitted ARD kernel (share of kernel sensitivity in the relevant directions;
 dotted: isotropic value $d_{\mathrm{eff}}/d$). (c) Spearman correlation between GP posterior mean and true function
@@ -191,18 +192,18 @@ At this budget every BO variant nevertheless stays ahead of both CMA-ES variants
 CMA-ES is far from converged at 500 evaluations, and long runs reach BO's final gap only after about 2 to 2.5 times that budget.
 
 \section{Dimension, budget and cost (E1, H1, H4, H5)}
-\begin{figure*}[t]\centering\includegraphics[width=\linewidth]{fig3_e1_h5}\caption{E1 and H5. (a, b) Median paired
+\begin{figure*}[t]\centering\includegraphics[width=0.9\textwidth]{fig3_e1_h5}\caption{E1 and H5. (a, b) Median paired
 difference in $\log_{10}$ gap, BO minus CMA-ES (negative: BO better), against evaluations per dimension, one line per $d$,
 for the rotated ellipsoid with $\kappa=100$ (a) and Rosenbrock (b); 20 seeds. (c) H1 statistic $D(d)$, the same
 difference at 20 evaluations per dimension (95\% bootstrap CI), for both E1 problems and the $\kappa=10^4$ supplement.
 (d) CMA-ES learning time $T$ (evaluations until the condition number of $C^{1/2}HC^{1/2}$ falls below 10): median and IQR,
 least-squares fits over all $d$ and $d\geq10$, and predicted slopes 1.71 (through the all-$d$ centroid), 1.87 and 2
 (through the $d\geq10$ centroid).}\label{fig:e1}\end{figure*}
-\begin{table*}[t]\centering\input{generated/tab_cstar}\caption{Break-even cost $c^*$ (seconds per evaluation) of ARD-BO
+\begin{table*}[t]\small\centering\input{generated/tab_cstar}\caption{Break-even cost $c^*$ (seconds per evaluation) of ARD-BO
 against CMA-ES on the E1 problems, at each BO run's own final gap (budgets 200, 200, 400, 640, 1000 for $d=2,3,5,8,10$):
 median and IQR over the seeds where CMA-ES needs more evaluations than BO, using the CMA-ES long runs. BO is faster in
 total time when an evaluation costs more than $c^*$.}\label{tab:cstar}\end{table*}
-\begin{table*}[t]\centering\input{generated/tab_h5}\caption{H5: fitted exponent $\hat\alpha$ of CMA-ES learning time
+\begin{table*}[t]\small\centering\input{generated/tab_h5}\caption{H5: fitted exponent $\hat\alpha$ of CMA-ES learning time
 against dimension (least squares on $\log T$ against $\log d$, 95\% bootstrap CI over seeds within each $d$) for
 thresholds $\tau$ on the condition number. Primary endpoint: $\tau=10$, $d\geq10$, predicted 1.87
 (the registered value applies to the $d\ge10$ rows only)}\label{tab:h5}\end{table*}
@@ -260,7 +261,7 @@ $\tau=3$, which rests on few runs, so the learning-rate prediction is refuted in
 ``learned'' is defined.
 
 \paragraph{Interpretation.}
-BO's advantage is largest early in a run (10 to 30 evaluations per dimension) and at low to moderate dimension (largest at d = 3 to 5 on the $\kappa=100$ ellipsoid);
+BO's advantage is largest early in a run (10 to 30 evaluations per dimension) and at low to moderate dimension (largest at $d=3$ to $5$ on the $\kappa=100$ ellipsoid);
 it is eroded as dimension and budget grow and as evaluations become cheaper.
 The learning-rate argument \citep{hansen2016tutorial} predicts CMA-ES's geometry learning only roughly;
 step-size adaptation and the evolution path, which the derivation ignores, may explain the difference. Caveats: the
