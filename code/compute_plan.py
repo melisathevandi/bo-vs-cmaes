@@ -15,11 +15,12 @@ check at d=10, which runs on 7 workers. TuRBO per-run cost is the measured media
 TuRBO pilot where available. CMA-ES and Sobol cost is negligible (about 0.1 ms per
 evaluation).
 
-BO refit schedule: cold refit every 10 iterations after n = 100 (A4 outcome, see lab notebook).
-The plan is the lean core (grids, E2 primary, E2 low-effective-dimension, H5, E1 d <= 10, reserved
-follow-up); E3, E2 other kappa, E1 d=20 and A8 c-e are optional and run only if the core is ahead
-of schedule on 6 Nov. Each row has a key matching the chain step names in logs/chain_times.csv
-(code/run_core.sh), so actual times can be set against these estimates.
+BO refit schedule: cold refit every 10 iterations after n = 100 (A4 outcome).
+Rows are grouped as core (grids, E2 primary, E2 low-effective-dimension, H5, E1 d <= 10, follow-up),
+optional (E3, E2 other kappa, E1 d=20) and extra (E2 secondary, A8 c-e). Expected finish times are
+cumulative from START; HARD_STOP and GATE are the planning cut-off times used to flag rows in the table.
+Each row has a key matching the step names in logs/chain_times.csv (code/run_core.sh), so measured
+times can be set against these estimates.
 
 Prints a markdown table and writes notes/compute_plan.md.
 """
@@ -38,8 +39,8 @@ HARD_STOP = datetime(2026, 11, 8, 23, 59)
 EVERY = 10                           # BO refit interval after n = 100 (A4 outcome)
 START = datetime(2026, 11, 5, 0, 58)  # end of the last finished row (E2 primary, logs/chain_times.csv)
 DONE = {"sens_bo", "e2_primary"}      # finished rows: no longer planned (actuals are in the lab notebook)
-GATE = datetime(2026, 11, 6, 23, 59)  # optional experiments only if the core is ahead here
-FOLLOW_UP_WALL_H = 20.0              # reserved follow-up experiment (given)
+GATE = datetime(2026, 11, 6, 23, 59)  # optional rows finishing after this are flagged
+FOLLOW_UP_WALL_H = 20.0              # wall hours reserved for the follow-up experiment
 
 _pilot = pd.read_csv(ROOT / "results" / "summary" / "pilot_timing.csv")
 _g = _pilot.groupby(["d", "n"])[["t_fit_cold_s", "t_acq_s"]].mean()

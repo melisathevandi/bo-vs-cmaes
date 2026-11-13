@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Core experiments in the agreed order, resuming by config hash (finished jobs are skipped):
+# Core experiments in a fixed order, resuming by config hash (finished jobs are skipped):
 # sensitivity grids -> decision rule -> freeze configs -> E2 primary -> E2 low-effective-dimension
 # -> H5 -> E1 (ascending dimension). Each step is retried up to 3 times; a step that still fails,
 # or a non-default winner in the sensitivity grids, stops the chain (marker: logs/CHAIN_STOPPED).

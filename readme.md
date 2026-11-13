@@ -56,8 +56,7 @@ break-even cost. Pilots and checks (timing pilot, refit-schedule check A4, corre
 `code/pilot_timing.py`, `analyze_a4.py`, `anchor.py`, `e0_invariance.py`, `diagnose_warm_start.py`.
 
 **Raw results are not in the repository** (3.7 GB, git-ignored); `results/summary/` holds every aggregated table and is tracked.
-Re-running everything takes about 2.5 days on a 7-core machine. TODO before submission: say here where the raw results are
-provided, or confirm that the summaries are enough.
+Re-running everything takes about 2.5 days on a 7-core machine.
 
 ## Reproduce the tables and figures from the saved runs
 
