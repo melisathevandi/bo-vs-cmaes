@@ -34,6 +34,9 @@ WORD = {2: "two", 3: "three", 5: "five", 8: "eight", 10: "ten", 20: "twenty"}
 PROB_WORD = {"ell_k100_rotated": "ellipsoid", "rosenbrock": "rosenbrock"}
 NUMBERS, SKIPPED = {}, []
 W = 6.5                                  # figure width in inches = the report's text width, so sizes below are print sizes
+W_COL = 3.3                              # single-column figure width in inches (two-column layout)
+RC_COL = {"font.size": 7.5, "axes.titlesize": 7.5, "axes.labelsize": 7.5, "xtick.labelsize": 7, "ytick.labelsize": 7,
+          "legend.fontsize": 7}         # print sizes for single-column figures
 plt.rcParams.update({"font.size": 7, "axes.titlesize": 7, "axes.labelsize": 7, "xtick.labelsize": 6.5,
                      "ytick.labelsize": 6.5, "legend.fontsize": 6, "lines.linewidth": 1.1})
 
@@ -324,25 +327,29 @@ def fig4_e3():
         return
     col = {"bo_logei": "#1f77b4", "bo_ucb": "#9467bd", "cma": "#d62728", "cma_ipop": "#8c564b", "sobol": "#7f7f7f"}
     lab = {"bo_logei": "ARD-BO LogEI", "bo_ucb": "ARD-BO UCB", "cma": "CMA-ES", "cma_ipop": "IPOP-CMA-ES", "sobol": "Sobol"}
-    fig, ax = plt.subplots(1, 2, figsize=(W, 2.7), sharey=True)
-    for a, src, title in ((ax[0], "short200", "(a) 200 evaluations"), (ax[1], "long2000", "(b) 2000 evaluations")):
-        for m in col:
-            r = s[(s.source == src) & (s.method == m)].sort_values("width")
-            if r.empty:
-                continue
-            a.errorbar(r.width * (1 + 0.04 * (list(col).index(m) - 2)), r.p_success,
-                       yerr=[r.p_success - r.wilson_lo, r.wilson_hi - r.p_success], fmt="o-", ms=3, lw=0.8,
-                       capsize=1.5, color=col[m], label=lab[m])
-        a.set_xscale("log")
-        a.minorticks_off()
-        a.set_xticks([0.0125, 0.025, 0.05, 0.1, 0.2], ["0.0125", "0.025", "0.05", "0.1", "0.2"])
-        a.set_xlabel("basin width $w$")
-        a.set_title(title)
-    ax[0].set_ylabel("P(success)")
-    ax[0].legend(loc="upper left")
-    fig.tight_layout()
-    fig.savefig(FIG / "fig4_e3.pdf", metadata={"CreationDate": None})
-    plt.close(fig)
+    # single-column figure (W_COL wide): panels stacked, 7-7.5 pt text at print size
+    with plt.rc_context(RC_COL):
+        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 3.9), sharex=True, sharey=True)
+        for a, src, title in ((ax[0], "short200", "(a) 200 evaluations"), (ax[1], "long2000", "(b) 2000 evaluations")):
+            for m in col:
+                r = s[(s.source == src) & (s.method == m)].sort_values("width")
+                if r.empty:
+                    continue
+                a.errorbar(r.width * (1 + 0.04 * (list(col).index(m) - 2)), r.p_success,
+                           yerr=[r.p_success - r.wilson_lo, r.wilson_hi - r.p_success], fmt="o-", ms=3, lw=0.8,
+                           capsize=1.5, color=col[m], label=lab[m])
+            a.set_xscale("log")
+            a.minorticks_off()
+            a.set_xticks([0.0125, 0.025, 0.05, 0.1, 0.2], ["0.0125", "0.025", "0.05", "0.1", "0.2"])
+            a.set_ylabel("P(success)")
+            a.set_title(title)
+        ax[1].set_xlabel("basin width $w$")
+        ax[0].legend(loc="upper left", ncol=2, columnspacing=0.8, handlelength=1.5)
+        ax[0].set_ylim(-0.05, 1.45)                         # headroom for the legend above the curves
+        ax[0].set_yticks([0, 0.25, 0.5, 0.75, 1])            # probabilities only (no ticks in the headroom)
+        fig.tight_layout()
+        fig.savefig(FIG / "fig4_e3.pdf", metadata={"CreationDate": None})
+        plt.close(fig)
     t = csv("e3_tests.csv")
     for src, nn in (("short200", "twohundred"), ("long2000", "twothousand")):
         for w, wn in ((0.2, "wide"), (0.0125, "narrow")):
@@ -369,36 +376,39 @@ def fig5_ablation():
     nice = {"turbo (default)": "TuRBO (ARD-scaled region)", "turbo_cubic_ard": "TuRBO (ARD kernel, cubic region)",
             "turbo_iso": "TuRBO (iso kernel, cubic region)", "bo_ard (E2)": "ARD-BO", "bo_iso (E2)": "iso-BO", "sobol (E2)": "Sobol"}
     tt = t.set_index("method").loc[order]
-    fig, ax = plt.subplots(1, 2, figsize=(W, 3.5))
     x = np.arange(len(order))
     from matplotlib.lines import Line2D
     mcol = {"turbo (default)": COLORS["turbo"], "turbo_cubic_ard": COLORS["turbo"], "turbo_iso": COLORS["turbo"],
             "bo_ard (E2)": COLORS["bo_ard"], "bo_iso (E2)": COLORS["bo_iso"], "sobol (E2)": COLORS["sobol"]}   # as in Figs 1, 2
-    for off, lab, mark, fill in ((-0.15, "aligned", "o", True), (0.15, "rotated", "s", False)):
-        for i, o in enumerate(order):
-            r = tt.loc[o]
-            med = r[f"median_{lab}"]
-            ax[0].errorbar(i + off, med, yerr=[[med - r[f"q1_{lab}"]], [r[f"q3_{lab}"] - med]], fmt=mark, color=mcol[o],
-                           mfc=mcol[o] if fill else "white", ms=4, capsize=2)
-    ax[0].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
-                 ["aligned (filled)", "rotated (open)"])
-    ax[0].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
-    ax[0].set_ylabel("median log$_{10}$ gap at n=500 (IQR)")
-    ax[0].set_title("(a) final gap at n=500 (median, IQR)")
-    for off, key, mark in ((-0.15, "delta_rot", "o"), (0.15, "noise_floor", "s")):
-        for i, o in enumerate(order):
-            r = tt.loc[o]
-            ax[1].errorbar(i + off, r[key], yerr=[[r[key] - r[f"{key}_lo"]], [r[f"{key}_hi"] - r[key]]], fmt=mark, ms=4,
-                           capsize=2, color=mcol[o], mfc=mcol[o] if mark == "o" else "white")
-    ax[1].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
-                 ["$\\Delta_{rot}$ (filled)", "noise floor (open)"])
-    ax[1].axhline(0, color="k", lw=0.6)
-    ax[1].set_xticks(x, [nice[o] for o in order], rotation=30, ha="right", rotation_mode="anchor", fontsize=6)
-    ax[1].set_ylabel("log$_{10}$ gap difference")
-    ax[1].set_title("(b) rotation penalty and noise floor")
-    fig.tight_layout()
-    fig.savefig(FIG / "fig5_ablation.pdf", metadata={"CreationDate": None})
-    plt.close(fig)
+    wrap = {"turbo (default)": "TuRBO (ARD-\nscaled region)", "turbo_cubic_ard": "TuRBO (ARD kernel,\ncubic region)",
+            "turbo_iso": "TuRBO (iso kernel,\ncubic region)"}                  # the names of `nice`, on two lines
+    # single-column figure (W_COL wide): panels stacked, 7-7.5 pt text at print size
+    with plt.rc_context(RC_COL):
+        fig, ax = plt.subplots(2, 1, figsize=(W_COL, 4.6), sharex=True)
+        for off, lab, mark, fill in ((-0.15, "aligned", "o", True), (0.15, "rotated", "s", False)):
+            for i, o in enumerate(order):
+                r = tt.loc[o]
+                med = r[f"median_{lab}"]
+                ax[0].errorbar(i + off, med, yerr=[[med - r[f"q1_{lab}"]], [r[f"q3_{lab}"] - med]], fmt=mark,
+                               color=mcol[o], mfc=mcol[o] if fill else "white", ms=4, capsize=2)
+        ax[0].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
+                     ["aligned (filled)", "rotated (open)"], loc="upper left")
+        ax[0].set_ylabel("median log$_{10}$ gap, n=500")
+        ax[0].set_title("(a) final gap at n=500 (median, IQR)")
+        for off, key, mark in ((-0.15, "delta_rot", "o"), (0.15, "noise_floor", "s")):
+            for i, o in enumerate(order):
+                r = tt.loc[o]
+                ax[1].errorbar(i + off, r[key], yerr=[[r[key] - r[f"{key}_lo"]], [r[f"{key}_hi"] - r[key]]], fmt=mark,
+                               ms=4, capsize=2, color=mcol[o], mfc=mcol[o] if mark == "o" else "white")
+        ax[1].legend([Line2D([], [], marker="o", color="k", ls=""), Line2D([], [], marker="s", color="k", mfc="white", ls="")],
+                     ["$\\Delta_{rot}$ (filled)", "noise floor (open)"], loc="upper right")
+        ax[1].axhline(0, color="k", lw=0.6)
+        ax[1].set_xticks(x, [wrap.get(o, nice[o]) for o in order], rotation=35, ha="right", rotation_mode="anchor")
+        ax[1].set_ylabel("log$_{10}$ gap difference")
+        ax[1].set_title("(b) rotation penalty and noise floor")
+        fig.tight_layout()
+        fig.savefig(FIG / "fig5_ablation.pdf", metadata={"CreationDate": None})
+        plt.close(fig)
     for name, tag in (("turbo (default)", "default"), ("turbo_cubic_ard", "cubic"), ("turbo_iso", "iso")):
         r = tt.loc[name]
         number(f"ablationdrot{tag}", ci_str(r.delta_rot, r.delta_rot_lo, r.delta_rot_hi), "{}")
