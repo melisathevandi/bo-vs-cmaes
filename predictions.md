@@ -38,8 +38,8 @@ Decoy-basin function: P(success) falls as the narrow basin gets narrower, for ev
 Success = best value below the decoy basin's minimum f_decoy.
 - BO fails on narrow basins when the basin is smaller than the spacing of the initial design
   (2d points); UCB (more exploration) beats LogEI on the narrowest basins.
-  (UCB is run in E3 because E3 is at d <= 5, where BO runs take minutes. The cost-based cuts in
-  the plan apply to the expensive d=10 and d=20 experiments.)
+  (UCB is run in E3 because E3 is at d <= 5, where BO runs take minutes; it is not run in the more
+  expensive d=10 and d=20 experiments.)
 - CMA-ES with IPOP restarts beats default CMA-ES at larger budgets; default CMA-ES is
   initialisation-dependent and rarely leaves the decoy basin.
 *Would refute H3:* P(success) does not depend on basin width, or LogEI beats UCB on the narrowest basin.
@@ -68,9 +68,9 @@ grows with n. c* is computed from the measured overheads, not predicted as a num
   the pycma defaults are what was measured.
 - **Primary prediction.** The bootstrap 95% CI for alpha_hat (d >= 10) contains 1.87, and
   alpha_hat (all d) is lower, about 1.7. Also reported (secondary): whether the CI contains 2.
-- **Would refute H5:** the CI for d >= 10 excludes 1.87. We would then report that the learning
+- **Would refute H5:** the CI for d >= 10 excludes 1.87. The report then states that the learning
   rates alone do not explain the scaling (the evolution path and step-size adaptation also affect
-  learning), and say whether alpha is still compatible with 2.
+  learning), and whether alpha is still compatible with 2.
 
 ## Follow-up experiment: what drives TuRBO's rotation penalty (committed 2026-11-06, before the runs)
 **What was already seen.** The E2 primary analysis (d=10, kappa=1e4, 500 evaluations, 30 seeds) gave the rotation penalty

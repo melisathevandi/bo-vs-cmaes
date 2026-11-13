@@ -1,5 +1,5 @@
 # TuRBO timing pilot (cost only): real runs, cold GP refits every 5 iterations, 2 seeds per cell.
-# Wall times are in each result's wall_s and t_method; summarised by code/analyze_timing.py.
+# Wall times are in each result's wall_s and t_method; summarised in results/summary/pilot_run_timing.csv.
 experiment = "pilot_turbo"
 budget = 500
 seeds = [0, 1]

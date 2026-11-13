@@ -95,7 +95,7 @@ def multistart_fits(train_x, train_y, ard, nu, n_starts, rng):
     """Fit the GP from several random starting lengthscales and return every result.
 
     The marginal likelihood can be flat along a ridge (several lengthscale settings with
-    the same likelihood), so one fit may not tell us how stable a quantity such as the
+    the same likelihood), so one fit does not show how stable a quantity such as the
     relevance ratio is. Starting lengthscales are log-uniform in [0.1, 10] (unit-cube
     units). Returns a list of {"mll": ..., "lengthscales": [...]}; failed fits are skipped.
     """

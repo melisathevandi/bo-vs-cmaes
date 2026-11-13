@@ -3,11 +3,11 @@
     uv run python code/analyze_sensitivity.py
 
 Each alternative configuration is compared with the default on the two pilot problems, paired by
-seed (held-out seeds 1000+), at the final budget of the run. Rule (notes/plan.md): keep the
+seed (held-out seeds 1000+), at the final budget of the run. Rule (fixed before the grids were run): keep the
 default unless an alternative is better on BOTH pilot problems with its 95% paired bootstrap CI
 excluding 0 (median difference in log10 gap, alternative minus default, CI upper bound < 0).
 Writes results/summary/sensitivity_<method>.csv and exits with status 3 if any alternative wins,
-so the experiment chain stops and the winner can be reviewed.
+so that the experiment chain in code/run_core.sh stops before the main runs.
 """
 
 import sys

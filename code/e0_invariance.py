@@ -1,6 +1,6 @@
 """E0: is CMA-ES rotation-invariant in practice, with and without the box?
 
-For each condition number and seed we run CMA-ES on three instances:
+For each condition number and seed, CMA-ES is run on three instances:
   aligned           ellipsoid with the axes along the coordinates
   rotated           the same ellipsoid (same optimum x*) after a random rotation
   aligned replicate a second, independent aligned instance (different optimum)

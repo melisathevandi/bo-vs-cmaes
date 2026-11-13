@@ -2,7 +2,7 @@
 
 Written and committed before any E1 gap value (F), final gap or cost number was computed. What had been looked at before this
 file: the number of result files per E1 experiment, the `code_dirty` and `workers` fields, per-job wall-clock lines in the run
-logs, and the chain durations. No pre-registered definition in `predictions.md` is changed. Where this file adds a detail the
+logs, and the run durations. No pre-registered definition in `predictions.md` is changed. Where this file adds a detail the
 prediction left open (grid, statistic for "smaller lead"), it is fixed here, before the numbers.
 
 ## Design as run

@@ -1,6 +1,6 @@
 # Sensitivity grid for CMA-ES: sigma0 in {0.15, 0.3, 0.6} x population in {default, 2x default}. Default = s0.3_p1.
 # Held-out seeds 1000-1009 (the main runs use 0-29), two pilot problems, 10 seeds per configuration.
-# Decision rule (fixed in notes/plan.md, A6/section 1.3): keep the default unless another
+# Decision rule (fixed before the grids were run, A6): keep the default unless another
 # configuration is better on BOTH pilot problems and its paired bootstrap CI (vs the default)
 # excludes 0; then adopt it and report it. Analysis: code/analyze_sensitivity.py.
 experiment = "sens_cmaes"

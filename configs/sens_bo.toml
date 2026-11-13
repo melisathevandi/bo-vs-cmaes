@@ -1,7 +1,7 @@
 # Sensitivity grid for BO (ARD, LogEI): n_init in {d, 2d, 4d} x Matern nu in {1.5, 2.5}. Default = n2d_nu2.5.
 # Cold refits every 10 iterations after n = 100 (A4 outcome).
 # Held-out seeds 1000-1009 (the main runs use 0-29), two pilot problems, 10 seeds per configuration.
-# Decision rule (fixed in notes/plan.md, A6/section 1.3): keep the default unless another
+# Decision rule (fixed before the grids were run, A6): keep the default unless another
 # configuration is better on BOTH pilot problems and its paired bootstrap CI (vs the default)
 # excludes 0; then adopt it and report it. Analysis: code/analyze_sensitivity.py.
 experiment = "sens_bo"

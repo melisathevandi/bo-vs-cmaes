@@ -1,7 +1,7 @@
 """A4: does the GP refit schedule change BO's results?
 
-Reference vs variants, paired by seed on held-out seeds. For each problem and budget we
-report the median paired difference in log10 gap (variant - reference; negative = variant
+Reference vs variants, paired by seed on held-out seeds. For each problem and budget the
+script reports the median paired difference in log10 gap (variant - reference; negative = variant
 better) with its 95% bootstrap CI, and the median wall-clock time of a run.
 
     uv run python code/analyze_a4.py                      # first check (d=5, n <= 300)
